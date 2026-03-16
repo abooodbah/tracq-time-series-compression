@@ -1,0 +1,17 @@
+__pycache__/
+.pytest_cache/
+.pytest_tmp/
+.venv/
+test_runtime/
+tests_artifacts/
+manual_verify_bundle/
+bench_results/
+paper_results/
+paper_submission/
+pytesttmp_*/
+pytest_tmp_dir_tracq/
+README_UPLOAD.md
+REPRODUCE_RESULTS.md
+uci_electricity_results.csv
+verification_runs/
+*.pyc

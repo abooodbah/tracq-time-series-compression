@@ -1,0 +1,13 @@
+numpy
+pillow
+typer
+rich
+pandas
+matplotlib
+pyarrow
+pytest
+scipy
+# HPC error-bounded compressors (optional but recommended for full benchmarks)
+zfpy
+h5py
+hdf5plugin
