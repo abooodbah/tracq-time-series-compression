@@ -15,3 +15,5 @@ REPRODUCE_RESULTS.md
 uci_electricity_results.csv
 verification_runs/
 *.pyc
+data/raw/
+data/processed_rebuilt_backup/
