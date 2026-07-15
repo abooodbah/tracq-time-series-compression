@@ -527,6 +527,46 @@ def fig14():
     save(fig, 14)
 
 
+# ---- Fig 17 (standalone): iso-RMSE size comparison vs ZFP ----
+def fig17():
+    iso = json.load(open(os.path.join(LAT, "iso_rmse.json")))
+    fig, axes = plt.subplots(nrows=2, figsize=(1044 / 300, 1500 / 300))
+
+    ax = axes[0]
+    d = iso["metropt3"]
+    t = sorted([(p["rmse"], 100 * p["ratio"]) for p in d["tracq"] if p["rmse"] > 0])
+    z = sorted([(p["rmse"], 100 * p["ratio"]) for p in d["zfp"] if p["rmse"] > 0])
+    ax.plot([p[0] for p in t], [p[1] for p in t], "^-", color=GREEN, ms=5, lw=1.6,
+            label="Enhanced TRACQ")
+    ax.plot([p[0] for p in z], [p[1] for p in z], "P-", color=BLUE, ms=6, lw=1.6, label="ZFP")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("RMSE (matched)")
+    ax.set_ylabel("Encoded size (% of original)")
+    ax.set_title("(a) MetroPT-3: size at equal RMSE")
+    ax.legend(fontsize=8)
+
+    ax = axes[1]
+    names = {"air_quality": ("Air Quality", RED, "o"),
+             "appliances": ("Appliances", GREEN, "s"),
+             "metro_traffic": ("Metro Traffic", PURPLE, "d"),
+             "metropt3": ("MetroPT-3", BLUE, "^")}
+    for key, (lab, c, mk) in names.items():
+        rows = iso[key]["iso"]
+        ax.plot([r["rmse"] for r in rows], [r["advantage"] for r in rows], mk + "-",
+                color=c, ms=5, lw=1.5, label=lab)
+    ax.axhline(1.0, color="black", ls=":", lw=1.2)
+    ax.set_xscale("log")
+    ax.set_xlabel("RMSE (matched)")
+    ax.set_ylabel("ZFP size ÷ TRACQ size")
+    ax.set_title("(b) Size advantage at equal RMSE")
+    ax.legend(fontsize=7.5)
+    fig.tight_layout(pad=1.1)
+    fig.savefig(os.path.join(OUT, "image17.png"), dpi=300)
+    plt.close(fig)
+    print("image17.png written")
+
+
 # ---- Fig 16: high-dimensional scaling ----
 def fig16():
     hd = json.load(open(os.path.join(LAT, "highdim.json")))
