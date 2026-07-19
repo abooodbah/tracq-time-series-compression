@@ -1,0 +1,12 @@
+{
+ "total_gb": 1000.0,
+ "n_windows": 78125,
+ "n_workers": 112,
+ "wall_s": 51.31419691815972,
+ "aggregate_mbs": 19487.78427917104,
+ "per_core_mbs": 359.66253276586434,
+ "ratio": 0.041903081134,
+ "worker_rss_mb_max": 106.23046875,
+ "worker_rss_mb_median": 104.75390625,
+ "hostname": "c512-113.stampede3.tacc.utexas.edu"
+}

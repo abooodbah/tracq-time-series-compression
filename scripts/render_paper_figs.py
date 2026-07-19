@@ -293,7 +293,7 @@ def fig9():
                               ("tracq_orig_16bit", "Base 16b", RED, "s"),
                               ("paa", "PAA", ORANGE, "v"),
                               ("sax", "SAX", GRAY, "x"),
-                              ("gorilla_like", "Gorilla", "#8c564b", "*")]:
+                              ("gorilla_like", "Rounded delta", "#8c564b", "*")]:
             r = RW[ds].get(m)
             if r and "metrics" in r and r["metrics"]["rmse"] > 1e-12 and r["metrics"]["rmse"] < 1e10:
                 ax.plot(r["ratio"], r["metrics"]["rmse"], mk, color=c, ms=7,
@@ -331,7 +331,7 @@ def fig10():
                ("LATTICE_1e-4", "Enh. (eps=1e-4)", "#0b4d0b"),
                ("paa", "PAA-64", ORANGE),
                ("sax", "SAX-64", GRAY),
-               ("gorilla_like", "Gorilla", "#8c564b"),
+               ("gorilla_like", "Rounded delta", "#8c564b"),
                ("zfp_tol_0.1", "ZFP (1e-1)", BLUE),
                ("zfp_tol_0.001", "ZFP (1e-3)", "#0b3d6b")]
     x = np.arange(3)

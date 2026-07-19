@@ -1,0 +1,104 @@
+{
+ "numerical_if": {
+  "name": "Numerical IF",
+  "f1": 0.7474747474747475,
+  "precision": 0.7474747474747475,
+  "recall": 0.7474747474747475
+ },
+ "old_image_rf": {
+  "name": "TRACQ Image RF",
+  "f1": 0.48484848484848486,
+  "precision": 0.48484848484848486,
+  "recall": 0.48484848484848486
+ },
+ "old_threshold": {
+  "name": "TRACQ Threshold",
+  "f1": 0.6558704453441295,
+  "precision": 0.5472972972972973,
+  "recall": 0.8181818181818182,
+  "best_feature": "pixel_std_below"
+ },
+ "t2_image_rf_paper_feats": {
+  "name": "TRACQ-2 RF (paper feats)",
+  "f1": 0.29347826086956524,
+  "precision": 0.3176470588235294,
+  "recall": 0.2727272727272727
+ },
+ "t2_image_rf_native": {
+  "name": "TRACQ-2 RF (native feats)",
+  "f1": 0.44329896907216493,
+  "precision": 0.45263157894736844,
+  "recall": 0.43434343434343436,
+  "throughput_wps": 8017.881983000702
+ },
+ "t2_threshold": {
+  "name": "TRACQ-2 Threshold (no ML)",
+  "f1": 0.6963562753036437,
+  "precision": 0.581081081081081,
+  "recall": 0.8686868686868687,
+  "feature": "rowmax_mean_above"
+ },
+ "t2_image_rf_all": {
+  "name": "TRACQ-2 RF (all feats)",
+  "f1": 0.36180904522613067,
+  "precision": 0.36,
+  "recall": 0.36363636363636365
+ },
+ "t2_traj_rf": {
+  "name": "TRACQ-2 RF (trajectory)",
+  "f1": 0.40816326530612246,
+  "precision": 0.41237113402061853,
+  "recall": 0.40404040404040403,
+  "throughput_wps": 3255.9202126776536
+ },
+ "t2_traj_threshold": {
+  "name": "TRACQ-2 Traj Threshold (no ML)",
+  "f1": 0.6614785992217899,
+  "precision": 0.5379746835443038,
+  "recall": 0.8585858585858586,
+  "feature": "span_max_above"
+ },
+ "t2_perrow_rf": {
+  "name": "TRACQ-2 RF (per-row feats)",
+  "f1": 0.1590909090909091,
+  "precision": 0.18181818181818182,
+  "recall": 0.1414141414141414,
+  "throughput_wps": 5373.42581981229
+ },
+ "t2_perrow_if": {
+  "name": "TRACQ-2 IF per-row (unsup)",
+  "f1": 0.7272727272727273,
+  "precision": 0.7272727272727273,
+  "recall": 0.7272727272727273
+ },
+ "t2_perrow_if_eps0.03": {
+  "name": "TRACQ-2 IF per-row eps=0.03",
+  "f1": 0.7474747474747475,
+  "precision": 0.7474747474747475,
+  "recall": 0.7474747474747475
+ },
+ "t2_perrow_if_eps0.001": {
+  "name": "TRACQ-2 IF per-row eps=0.001",
+  "f1": 0.696969696969697,
+  "precision": 0.696969696969697,
+  "recall": 0.696969696969697
+ },
+ "t2_ensemble": {
+  "name": "TRACQ-2 IF+rowmax ensemble (unsup)",
+  "f1": 0.6868686868686869,
+  "precision": 0.6868686868686869,
+  "recall": 0.6868686868686869
+ },
+ "t2_full_rf": {
+  "name": "TRACQ-2 RF (native+traj)",
+  "f1": 0.47959183673469385,
+  "precision": 0.4845360824742268,
+  "recall": 0.47474747474747475
+ },
+ "t2_if": {
+  "name": "TRACQ-2 IsolationForest (unsup)",
+  "f1": 0.5656565656565656,
+  "precision": 0.5656565656565656,
+  "recall": 0.5656565656565656
+ }
+}
