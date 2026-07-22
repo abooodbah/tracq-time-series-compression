@@ -570,6 +570,65 @@ def fig17():
     print("image17.png written")
 
 
+# ---- Fig 18: node-parallel strong/weak scaling ----
+def fig18():
+    SC = json.load(open(os.path.join(LAT, "scaling_result.json")))
+
+    def med3(runs, w, key):
+        vals = sorted(r[key] for r in runs if r["workers"] == w)
+        return vals[len(vals) // 2], vals[0], vals[-1]
+
+    counts = sorted({r["workers"] for r in SC["strong"]})
+    fig, axes = plt.subplots(nrows=2, figsize=(1044 / 300, 1500 / 300))
+
+    ax = axes[0]
+    base = med3(SC["strong"], 1, "wall_s")[0]
+    sp, lo, hi = [], [], []
+    for w in counts:
+        m, mn, mx = med3(SC["strong"], w, "wall_s")
+        sp.append(base / m)
+        lo.append(base / mx)
+        hi.append(base / mn)
+    ax.plot(counts, counts, "--", color="black", lw=1.1, label="Ideal")
+    ax.errorbar(counts, sp, yerr=[np.array(sp) - np.array(lo), np.array(hi) - np.array(sp)],
+                fmt="o-", color=GREEN, ms=5, lw=1.6, capsize=2.5, label="Measured")
+    ax.set_xscale("log", base=2)
+    ax.set_yscale("log", base=2)
+    ax.set_xticks(counts, [str(c) for c in counts])
+    ax.set_xlabel("Workers")
+    ax.set_ylabel("Speedup vs. one worker")
+    ax.set_title("(a) Strong scaling, fixed 50 GB", fontsize=9.5)
+    ax.legend(fontsize=8)
+
+    ax = axes[1]
+    wbase = med3(SC["weak"], 1, "wall_s")[0]
+    eff, elo, ehi, enc = [], [], [], []
+    for w in counts:
+        m, mn, mx = med3(SC["weak"], w, "wall_s")
+        eff.append(100 * wbase / m)
+        elo.append(100 * wbase / mx)
+        ehi.append(100 * wbase / mn)
+        enc.append(med3(SC["weak"], w, "enc_core_mbs")[0])
+    ax.errorbar(counts, eff, yerr=[np.array(eff) - np.array(elo), np.array(ehi) - np.array(eff)],
+                fmt="s-", color=BLUE, ms=5, lw=1.6, capsize=2.5, label="Efficiency")
+    ax.axhline(100, color="black", ls="--", lw=1.1)
+    ax.set_xscale("log", base=2)
+    ax.set_xticks(counts, [str(c) for c in counts])
+    ax.set_ylim(0, 115)
+    ax.set_xlabel("Workers")
+    ax.set_ylabel("Parallel efficiency (%)", color=BLUE)
+    ax.set_title("(b) Weak scaling, 8 GB per worker", fontsize=9.5)
+    ax2 = ax.twinx()
+    ax2.plot(counts, enc, "^-", color=GREEN, ms=5, lw=1.4)
+    ax2.set_ylabel("Encode stage (MB/s per core)", color=GREEN)
+    ax2.set_ylim(0, max(enc) * 1.25)
+    ax2.grid(False)
+    fig.tight_layout(pad=1.1)
+    fig.savefig(os.path.join(OUT, "image18.png"), dpi=300)
+    plt.close(fig)
+    print("image18.png written")
+
+
 # ---- Fig 16: high-dimensional scaling ----
 def fig16():
     hd = json.load(open(os.path.join(LAT, "highdim.json")))
