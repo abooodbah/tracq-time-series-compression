@@ -36,9 +36,9 @@ OUT = os.path.join(LAT, "figs_v2")
 os.makedirs(OUT, exist_ok=True)
 
 plt.rcParams.update({
-    "font.size": 9, "font.family": "serif",
-    "axes.labelsize": 9, "axes.titlesize": 10,
-    "xtick.labelsize": 8, "ytick.labelsize": 8, "legend.fontsize": 8,
+    "font.size": 10, "font.family": "serif",
+    "axes.labelsize": 10, "axes.titlesize": 10,
+    "xtick.labelsize": 10, "ytick.labelsize": 10, "legend.fontsize": 10,
     "figure.dpi": 300, "savefig.dpi": 300,
     "axes.grid": True, "grid.alpha": 0.3,
 })
@@ -54,6 +54,12 @@ SIZES = {1: (1044, 818), 2: (2127, 818), 3: (2123, 818), 4: (1336, 879), 5: (102
 def newfig(n, **kw):
     w, h = SIZES[n]
     return plt.subplots(figsize=(w / 300, h / 300), **kw)
+
+
+def plabel(ax, s):
+    """Panel identifier placed below the panel, as a second x-label line."""
+    cur = ax.get_xlabel()
+    ax.set_xlabel(cur + "\n" + s if cur else s)
 
 
 def save(fig, n):
@@ -72,18 +78,17 @@ def fig1():
     M = np.array([[ab[r][c] for c in cols] for r in rows])
     fig, ax = newfig(1)
     im = ax.imshow(M, cmap="RdYlGn_r", norm=LogNorm(vmin=0.02, vmax=700), aspect="auto")
-    ax.set_xticks(range(4), col_labels, fontsize=8)
+    ax.set_xticks(range(4), col_labels, rotation=18, ha="right")
     ax.set_yticks(range(4), row_labels)
-    ax.set_title("Ablation: RMSE by Config. and Data Type")
     ax.grid(False)
     for i in range(4):
         for j in range(4):
             v = M[i, j]
             txt = f"{v:.1f}" if v >= 1 else f"{v:.3f}"
             ax.text(j, i, txt, ha="center", va="center",
-                    color="white" if v > 30 or v < 0.08 else "black", fontsize=8)
+                    color="white" if v > 30 or v < 0.08 else "black", fontsize=10)
     cb = fig.colorbar(im, ax=ax)
-    cb.set_label("RMSE (log scale)")
+    cb.set_label("RMSE")
     fig.tight_layout()
     save(fig, 1)
 
@@ -100,7 +105,6 @@ def fig2():
     ax.set_yscale("log")
     ax.set_xlabel("Variable scale")
     ax.set_ylabel("Mean relative error (%)")
-    ax.set_title("Relative Error Across Six Orders of Magnitude")
     ax.legend(loc="center left")
     fig.tight_layout()
     save(fig, 2)
@@ -111,15 +115,15 @@ def fig3():
     d = FD["drift"]
     t = d["t"]
     fig, axes = newfig(3, ncols=2)
-    for ax, yscale, title in zip(axes, ["linear", "log"], ["Linear Scale", "Log Scale"]):
+    for ax, yscale, letter in zip(axes, ["linear", "log"], ["(a)", "(b)"]):
         ax.plot(t, d["base"], color=RED, lw=2, label="Base TRACQ")
         ax.plot(t, d["enh"], color=BLUE, lw=2, label="Enhanced")
         ax.axhline(d["bound"], color="black", ls="--", lw=1.2,
                    label=f"Guaranteed bound ({d['bound']:.2f})")
         ax.set_yscale(yscale)
-        ax.set_xlabel("Time Steps")
+        ax.set_xlabel("Time step")
         ax.set_ylabel("Cumulative RMSE")
-        ax.set_title(title)
+        plabel(ax, letter)
         ax.legend()
     fig.tight_layout()
     save(fig, 3)
@@ -139,10 +143,9 @@ def fig4():
                 lw=1.5, label=lab)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Compression Ratio (% of original)")
+    ax.set_xlabel("Encoded size (% of original)")
     ax.set_ylabel("RMSE")
-    ax.set_title("Rate-Distortion: Base vs. Enhanced")
-    ax.legend(fontsize=7.5)
+    ax.legend()
     fig.tight_layout()
     save(fig, 4)
 
@@ -163,10 +166,9 @@ def fig5():
             alpha=0.85, lw=1, label="ZFP")
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Compression Ratio (% of original)")
+    ax.set_xlabel("Encoded size (% of original)")
     ax.set_ylabel("RMSE")
-    ax.set_title("Rate-Distortion: TRACQ vs HPC")
-    ax.legend(loc="lower left", fontsize=6.5, ncols=2, frameon=True)
+    ax.legend(loc="upper right", fontsize=9, ncols=2, frameon=True)
     fig.tight_layout()
     save(fig, 5)
 
@@ -178,17 +180,17 @@ def fig6():
     x = np.arange(len(sizes))
     w = 0.26
     fig, axes = newfig(6, ncols=2)
-    for ax, key, title in zip(axes, ["enc", "dec"], ["Encoding Throughput", "Decoding Throughput"]):
+    for ax, key, letter in zip(axes, ["enc", "dec"], ["(a)", "(b)"]):
         ax.bar(x - w, [th[s]["base"][key] for s in sizes], w, color=RED, edgecolor="black",
                lw=0.5, label="Base TRACQ")
         ax.bar(x, [th[s]["enh"][key] for s in sizes], w, color=GREEN, edgecolor="black",
                lw=0.5, label="Enhanced TRACQ")
         ax.bar(x + w, [th[s].get("zfp", {}).get(key, 0) for s in sizes], w, color=BLUE,
                edgecolor="black", lw=0.5, label="ZFP")
-        ax.set_xticks(x, sizes)
-        ax.set_xlabel("Data Size (vars x time)")
+        ax.set_xticks(x, sizes, rotation=15, ha="right")
+        ax.set_xlabel("Data size (variables × time)")
         ax.set_ylabel("Throughput (MB/s)")
-        ax.set_title(title)
+        plabel(ax, letter)
         ax.legend()
         ax.set_axisbelow(True)
     fig.tight_layout()
@@ -225,12 +227,11 @@ def fig7():
         vals = [enc[ds].get(m, 0) for ds in names]
         ax.bar(x + (i - 2) * w, vals, w, color=c, edgecolor="black", lw=0.5, label=m)
     ax.set_xticks(x, list(names.values()))
-    ax.set_ylabel("Encode Throughput (MB/s)")
-    ax.set_title("Real-World Dataset Encoding Throughput")
+    ax.set_ylabel("Encode throughput (MB/s)")
     ax.set_yscale("log")
     ymax = max(v for d in enc.values() for v in d.values())
     ax.set_ylim(top=ymax * 8)
-    ax.legend(ncols=5, fontsize=7.5, loc="upper left")
+    ax.legend(ncols=3, fontsize=9, loc="upper left")
     ax.set_axisbelow(True)
     fig.tight_layout()
     save(fig, 7)
@@ -254,10 +255,10 @@ def fig8():
     ax2.tick_params(axis="y", labelcolor=RED)
     ax2.set_ylim(0, max(st["peak_rss_mb"]) * 1.3)
     ax2.grid(False)
-    ax.set_title("Synthetic Streaming Scaling")
+    plabel(ax, "(a)")
 
     ax = axes[1]
-    labels = ["Enh. (fast)", "Enh. (archival)", "Gzip"]
+    labels = ["Fast", "Archival", "Gzip"]
     keys = ["enh_fast", "enh_archival", "gzip"]
     x = np.arange(3)
     w = 0.32
@@ -269,16 +270,15 @@ def fig8():
             lw=0.5, label="Compression ratio")
     ax3.set_ylabel("Compression ratio")
     ax3.grid(False)
-    ax.set_xticks(x, labels, fontsize=8)
-    ax.set_title("MetroPT-3 Streaming Benchmark")
+    ax.set_xticks(x, labels, fontsize=9)
+    plabel(ax, "(b)")
     ax.set_ylim(0, 430)
     ax3.set_ylim(0, 0.10)
     h1, l1 = ax.get_legend_handles_labels()
     h3, l3 = ax3.get_legend_handles_labels()
-    ax.legend(h1 + h3, l1 + l3, loc="upper center", fontsize=7.5)
+    ax.legend(h1 + h3, l1 + l3, loc="upper center", fontsize=9)
     ax.set_axisbelow(True)
-    fig.suptitle("Big-Data Evidence: Real Streaming Data and Synthetic Scaling", fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.93])
+    fig.tight_layout()
     save(fig, 8)
 
 
@@ -287,6 +287,7 @@ def fig9():
     names = {"uci_air_quality": "Air Quality", "uci_appliances_energy": "Appliances",
              "uci_metro_traffic": "Metro Traffic"}
     fig, axes = newfig(9, ncols=3)
+    letters = {"uci_air_quality": "(a)", "uci_appliances_energy": "(b)", "uci_metro_traffic": "(c)"}
     for ax, (ds, nm) in zip(axes, names.items()):
         pts = []
         for m, lab, c, mk in [("tracq_orig_8bit", "Base 8b", RED, "o"),
@@ -311,13 +312,12 @@ def fig9():
                     ms=5, lw=1.2, label=lab if ds == "uci_air_quality" else None)
         ax.set_xscale("log")
         ax.set_yscale("log")
-        ax.set_title(nm)
         ax.set_xlabel("Compression ratio")
+        plabel(ax, f"{letters[ds]} {nm}")
         if ds == "uci_air_quality":
             ax.set_ylabel("RMSE")
-    fig.legend(loc="lower center", ncols=8, fontsize=7, frameon=True)
-    fig.suptitle("Real-World Rate-Distortion (lower-left is better)")
-    fig.tight_layout(rect=[0, 0.09, 1, 0.95])
+    fig.legend(loc="lower center", ncols=4, fontsize=9, frameon=True)
+    fig.tight_layout(rect=[0, 0.13, 1, 1])
     save(fig, 9)
 
 
@@ -349,11 +349,10 @@ def fig10():
                 vals.append(min(max(r["metrics"]["rmse"], 1e-4), 1e5) if r and "metrics" in r else 0)
         ax.bar(x + (i - 4) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
     ax.set_yscale("log")
-    ax.set_ylim(top=3e5)
+    ax.set_ylim(top=3e6)
     ax.set_xticks(x, list(names.values()))
-    ax.set_ylabel("RMSE (log scale)")
-    ax.set_title("RMSE by Method Across Real-World Datasets")
-    ax.legend(ncols=5, fontsize=6.6, loc="upper center")
+    ax.set_ylabel("RMSE")
+    ax.legend(ncols=3, fontsize=9, loc="upper center")
     ax.set_axisbelow(True)
     fig.tight_layout()
     save(fig, 10)
@@ -368,7 +367,8 @@ def fig11():
     }
     paa = [MP[f"paa_{s}"] for s in (1024, 4096, 16384)]
     zfp = [MP[f"zfp_tol_{t}"] for t in ("0.1", "0.01", "0.001")]
-    for ax, met, lab in [(axes[0], "rmse", "RMSE"), (axes[1], "smape", "SMAPE")]:
+    for ax, met, lab, letter in [(axes[0], "rmse", "RMSE", "(a)"),
+                                 (axes[1], "smape", "SMAPE", "(b)")]:
         for key, (pts, c, mk, slab) in series.items():
             xs = [p["ratio"] for p in pts]
             ys = [max(p[met], 1e-6) for p in pts]
@@ -383,10 +383,9 @@ def fig11():
         ax.set_yscale("log")
         ax.set_xlabel("Compression ratio")
         ax.set_ylabel(lab)
-        ax.set_title(f"Compression ratio vs. {lab}")
-        ax.legend(fontsize=7)
-    fig.suptitle("Full-Length MetroPT-3 (1,516,948 steps, 15 variables)")
-    fig.tight_layout(rect=[0, 0, 1, 0.94])
+        plabel(ax, letter)
+        ax.legend(fontsize=9)
+    fig.tight_layout()
     save(fig, 11)
 
 
@@ -404,10 +403,10 @@ def fig12():
         if key in pv:
             ax.plot(x, np.array(pv[key])[order], mk + "-", color=c, ms=4, lw=1, label=lab)
     ax.set_yscale("log")
-    ax.set_xlabel("Variable (sorted by mean |magnitude|)")
+    ax.set_xlabel("Variable (sorted by mean magnitude)")
     ax.set_ylabel("Per-variable SMAPE")
-    ax.set_title("(a) Per-Variable SMAPE, Appliances Energy")
-    ax.legend(fontsize=7)
+    plabel(ax, "(a)")
+    ax.legend(fontsize=9)
 
     ax = axes[1]
     for ds, dsl in [("uci_air_quality", "o"), ("uci_appliances_energy", "s"), ("uci_metro_traffic", "^")]:
@@ -433,8 +432,8 @@ def fig12():
     ax.set_yscale("log")
     ax.set_xlabel("Compression ratio")
     ax.set_ylabel("SMAPE")
-    ax.set_title("(b) SMAPE vs. Compression Ratio")
-    ax.legend(handles=handles, fontsize=6.5, ncols=2)
+    plabel(ax, "(b)")
+    ax.legend(handles=handles, fontsize=8.5, ncols=2)
     fig.tight_layout()
     save(fig, 12)
 
@@ -451,9 +450,9 @@ def fig15():
     sd = anom.std(axis=1, keepdims=True) + 1e-9
     fig, ax = newfig(15)
     im = ax.imshow((anom - mu) / sd, aspect="auto", cmap="viridis", interpolation="nearest")
-    ax.set_title("(a) Raw signal with injected anomalies (z-scored per variable)", pad=8)
     ax.set_ylabel("Variable")
     ax.set_xlabel("Time step")
+    plabel(ax, "(a)")
     ax.grid(False)
     fig.colorbar(im, ax=ax, fraction=0.025)
     fig.tight_layout(pad=1.2)
@@ -463,15 +462,15 @@ def fig15():
 def fig13():
     normal, anom, gn, ga, marks = _visual_demo_data()
     fig, axes = newfig(13, nrows=2, ncols=1)
-    for ax, g, ttl in [(axes[0], gn, "(b) Compressed grid: normal signal"),
-                       (axes[1], ga, "(c) Compressed grid: anomalous signal")]:
+    for ax, g, letter in [(axes[0], gn, "(b)"), (axes[1], ga, "(c)")]:
         im = ax.imshow(g, aspect="auto", cmap="gray", vmin=64, vmax=192, interpolation="nearest")
-        ax.set_title(ttl, pad=8)
         ax.set_ylabel("Variable")
         ax.grid(False)
         cb = fig.colorbar(im, ax=ax, fraction=0.025)
-        cb.set_label("pixel (display 64-192)", fontsize=7)
-    axes[1].set_xlabel("Time step")
+        cb.set_label("Pixel value", fontsize=10)
+        if ax is axes[1]:
+            ax.set_xlabel("Time step")
+        plabel(ax, letter)
     for v, lab, tx, lx, ly in zip(marks, ["spike", "level shift", "oscillation"],
                                   [400, 600, 650], [255, 455, 505], [0.6, 3.4, 7.2]):
         axes[1].annotate(lab, xy=(tx, int(v)), xytext=(lx, ly),
@@ -500,17 +499,17 @@ def fig14():
                edgecolor="black", lw=0.5)
         ax.bar(x[i] + w, r["recall"], w, color=colors[i], alpha=0.5, hatch="\\\\",
                edgecolor="black", lw=0.5)
-        ax.text(x[i] - w, r["f1"] + 0.02, f"{r['f1']:.3f}", ha="center", fontsize=7.5,
+        ax.text(x[i] - w, r["f1"] + 0.02, f"{r['f1']:.3f}", ha="center", fontsize=9,
                 fontweight="bold")
     from matplotlib.patches import Patch
     ax.legend(handles=[Patch(facecolor="#bbb", edgecolor="k", label="F1-Score"),
                        Patch(facecolor="#bbb", edgecolor="k", hatch="//", label="Precision"),
                        Patch(facecolor="#bbb", edgecolor="k", hatch="\\\\", label="Recall")],
-              loc="upper right", fontsize=6.8)
-    ax.set_xticks(x, [p[0] for p in pipes], fontsize=7, rotation=18)
-    ax.set_ylim(0, 1.02)
+              loc="upper right", fontsize=9)
+    ax.set_xticks(x, [p[0] for p in pipes], fontsize=9, rotation=18)
+    ax.set_ylim(0, 1.12)
     ax.set_ylabel("Score")
-    ax.set_title("(a) Anomaly Detection: F1 / Precision / Recall")
+    plabel(ax, "(a)")
     ax.set_axisbelow(True)
 
     ax = axes[1]
@@ -518,10 +517,10 @@ def fig14():
     vals = [at["direct_wps"], at["decode_detect_wps"]]
     ax.barh(names, vals, color=[GREEN, RED], edgecolor="black", lw=0.5, height=0.45)
     for i, v in enumerate(vals):
-        ax.text(v + 18, i, f"{v:.0f} w/s", va="center", fontsize=8, fontweight="bold")
-    ax.set_xlabel("Throughput (windows/sec)")
-    ax.set_title(f"(b) Throughput: {at['speedup']:.0f}x speedup, same F1")
-    ax.set_xlim(0, max(vals) * 1.22)
+        ax.text(v + 18, i, f"{v:.0f} w/s", va="center", fontsize=9, fontweight="bold")
+    ax.set_xlabel("Throughput (windows/s)")
+    plabel(ax, "(b)")
+    ax.set_xlim(0, max(vals) * 1.28)
     ax.set_axisbelow(True)
     fig.tight_layout()
     save(fig, 14)
@@ -546,8 +545,8 @@ def fig17():
     ax.set_yscale("log")
     ax.set_xlabel("RMSE (matched)")
     ax.set_ylabel("Encoded size (% of original)")
-    ax.set_title("(a) MetroPT-3: size at equal RMSE")
-    ax.legend(fontsize=8)
+    plabel(ax, "(a)")
+    ax.legend(fontsize=9)
 
     ax = axes[1]
     names = {"air_quality": ("Air Quality", RED, "o"),
@@ -562,8 +561,8 @@ def fig17():
     ax.set_xscale("log")
     ax.set_xlabel("RMSE (matched)")
     ax.set_ylabel("Best HPC size ÷ TRACQ size")
-    ax.set_title("(b) Advantage over stronger HPC codec", fontsize=9.5)
-    ax.legend(fontsize=7.5)
+    plabel(ax, "(b)")
+    ax.legend(fontsize=9)
     fig.tight_layout(pad=1.1)
     fig.savefig(os.path.join(OUT, "image17.png"), dpi=300)
     plt.close(fig)
@@ -597,8 +596,8 @@ def fig18():
     ax.set_xticks(counts, [str(c) for c in counts])
     ax.set_xlabel("Workers")
     ax.set_ylabel("Speedup vs. one worker")
-    ax.set_title("(a) Strong scaling, fixed 50 GB", fontsize=9.5)
-    ax.legend(fontsize=8)
+    plabel(ax, "(a)")
+    ax.legend(fontsize=9)
 
     ax = axes[1]
     wbase = med3(SC["weak"], 1, "wall_s")[0]
@@ -617,10 +616,10 @@ def fig18():
     ax.set_ylim(0, 115)
     ax.set_xlabel("Workers")
     ax.set_ylabel("Parallel efficiency (%)", color=BLUE)
-    ax.set_title("(b) Weak scaling, 8 GB per worker", fontsize=9.5)
+    plabel(ax, "(b)")
     ax2 = ax.twinx()
     ax2.plot(counts, enc, "^-", color=GREEN, ms=5, lw=1.4)
-    ax2.set_ylabel("Encode stage (MB/s per core)", color=GREEN)
+    ax2.set_ylabel("Encode throughput (MB/s per core)", color=GREEN)
     ax2.set_ylim(0, max(enc) * 1.25)
     ax2.grid(False)
     fig.tight_layout(pad=1.1)
@@ -646,8 +645,8 @@ def fig16():
     ax.set_yscale("log")
     ax.set_xlabel("Variables")
     ax.set_ylabel("Throughput (MB/s)")
-    ax.set_title("(a) Throughput vs. dimensionality")
-    ax.legend(fontsize=7.5)
+    plabel(ax, "(a)")
+    ax.legend(fontsize=9)
 
     ax = axes[1]
     ax.plot(N, [100 * r["ratio_p1"] for r in syn], "o-", color=GREEN, lw=1.8, ms=6,
@@ -658,10 +657,10 @@ def fig16():
             label="Metadata share of artifact (%)")
     ax.set_xscale("log", base=2)
     ax.set_xlabel("Variables")
-    ax.set_ylabel("Percent")
-    ax.set_title("(b) Size and metadata vs. dimensionality")
+    ax.set_ylabel("Percent of original size")
+    plabel(ax, "(b)")
     ax.set_ylim(0, None)
-    ax.legend(fontsize=7.5)
+    ax.legend(fontsize=9)
     fig.tight_layout()
     save(fig, 16)
 
