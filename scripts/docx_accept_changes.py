@@ -23,9 +23,25 @@ def q(tag):
     return "{%s}%s" % (W, local)
 
 
+M = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
+
+
 def accept(path):
     tree = etree.parse(path)
     root = tree.getroot()
+
+    # Word re-encodes tracked-deleted math three ways; resolve them before the
+    # generic pass would strip the markers and lose the deletion:
+    #   1. a w:del marker directly inside an m:r deletes that math run
+    for mr in list(root.iter(M + "r")):
+        if any(c.tag == q("w:del") for c in mr) and mr.getparent() is not None:
+            mr.getparent().remove(mr)
+    #   2. a w:del inside an m:ctrlPr deletes the construct owning the ctrlPr
+    for cp in list(root.iter(M + "ctrlPr")):
+        if cp.find(q("w:del")) is not None:
+            owner = cp.getparent()
+            if owner is not None and owner.getparent() is not None:
+                owner.getparent().remove(owner)
 
     # remove deletions (content deletions and paragraph-mark markers alike)
     for d in list(root.iter(q("w:del"))):
@@ -85,6 +101,14 @@ def accept(path):
         r = dt.getparent()
         if r is not None and r.getparent() is not None:
             r.getparent().remove(r)
+
+    #   3. hollow math left behind (all content deleted) renders as an empty
+    #      box: drop any oMath/oMathPara with no math text remaining
+    for om in list(root.iter(M + "oMathPara")) + list(root.iter(M + "oMath")):
+        if om.getparent() is None:
+            continue
+        if not "".join(t.text or "" for t in om.iter(M + "t")).strip():
+            om.getparent().remove(om)
 
     tree.write(path, xml_declaration=True, encoding="UTF-8", standalone=True)
 

@@ -62,6 +62,24 @@ def plabel(ax, s):
     ax.set_xlabel(cur + "\n" + s if cur else s)
 
 
+def shrink(fig, s):
+    """Reduce every text element to size s (advisor: match Fig. 10's look)."""
+    for ax in fig.axes:
+        ax.xaxis.label.set_size(s)
+        ax.yaxis.label.set_size(s)
+        for t in ax.get_xticklabels() + ax.get_yticklabels():
+            t.set_size(s)
+        lg = ax.get_legend()
+        if lg is not None:
+            for t in lg.get_texts():
+                t.set_size(s)
+        for t in ax.texts:
+            t.set_size(min(t.get_size(), s))
+
+
+RATIO_LABEL = "Compression ratio (original ÷ encoded)"
+
+
 def save(fig, n):
     fig.savefig(os.path.join(OUT, f"image{n}.png"), dpi=300, bbox_inches=None)
     plt.close(fig)
@@ -87,8 +105,12 @@ def fig1():
             txt = f"{v:.1f}" if v >= 1 else f"{v:.3f}"
             ax.text(j, i, txt, ha="center", va="center",
                     color="white" if v > 30 or v < 0.08 else "black", fontsize=10)
+    for k in (0.5, 1.5, 2.5):
+        ax.axhline(k, color="white", lw=2)
+        ax.axvline(k, color="white", lw=2)
     cb = fig.colorbar(im, ax=ax)
     cb.set_label("RMSE")
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 1)
 
@@ -106,6 +128,7 @@ def fig2():
     ax.set_xlabel("Variable scale")
     ax.set_ylabel("Mean relative error (%)")
     ax.legend(loc="center left")
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 2)
 
@@ -125,6 +148,7 @@ def fig3():
         ax.set_ylabel("Cumulative RMSE")
         plabel(ax, letter)
         ax.legend()
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 3)
 
@@ -134,16 +158,16 @@ def fig4():
     rd = FD["rd_sensor"]
     fig, ax = newfig(4)
     b = rd["base"]
-    ax.plot([100 * p["ratio"] for p in b], [p["rmse"] for p in b], "o-", color=RED, ms=7, lw=1.5,
+    ax.plot([1 / p["ratio"] for p in b], [p["rmse"] for p in b], "o-", color=RED, ms=7, lw=1.5,
             label="Base TRACQ (8/16 bit)")
     for key, c, m, lab in [("enh_abs", GREEN, "^", "Enhanced (absolute bound)"),
                            ("enh_rel", PURPLE, "d", "Enhanced (relative bound)")]:
         pts = sorted(rd[key], key=lambda p: p["ratio"])
-        ax.plot([100 * p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=6,
+        ax.plot([1 / p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=6,
                 lw=1.5, label=lab)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Encoded size (% of original)")
+    ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("RMSE")
     ax.legend()
     fig.tight_layout()
@@ -155,20 +179,20 @@ def fig5():
     rd = FD["rd_sensor"]
     fig, ax = newfig(5)
     b = rd["base"]
-    ax.plot([100 * p["ratio"] for p in b], [p["rmse"] for p in b], "o", color=RED, ms=9,
+    ax.plot([1 / p["ratio"] for p in b], [p["rmse"] for p in b], "o", color=RED, ms=9,
             alpha=0.75, label="Base")
     for key, c, m, lab in [("enh_abs", GREEN, "^", "Enh. (abs)"), ("enh_rel", PURPLE, "D", "Enh. (rel)")]:
         pts = sorted(rd[key], key=lambda p: p["ratio"])
-        ax.plot([100 * p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=5,
+        ax.plot([1 / p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=5,
                 alpha=0.85, lw=1, label=lab)
     z = sorted(rd["zfp"], key=lambda p: p["ratio"])
-    ax.plot([100 * p["ratio"] for p in z], [p["rmse"] for p in z], "P-", color=BLUE, ms=7,
+    ax.plot([1 / p["ratio"] for p in z], [p["rmse"] for p in z], "P-", color=BLUE, ms=7,
             alpha=0.85, lw=1, label="ZFP")
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Encoded size (% of original)")
+    ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("RMSE")
-    ax.legend(loc="upper right", fontsize=9, ncols=2, frameon=True)
+    ax.legend(loc="upper left", fontsize=9, ncols=2, frameon=True)
     fig.tight_layout()
     save(fig, 5)
 
@@ -193,6 +217,7 @@ def fig6():
         plabel(ax, letter)
         ax.legend()
         ax.set_axisbelow(True)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 6)
 
@@ -231,8 +256,9 @@ def fig7():
     ax.set_yscale("log")
     ymax = max(v for d in enc.values() for v in d.values())
     ax.set_ylim(top=ymax * 8)
-    ax.legend(ncols=3, fontsize=9, loc="upper left")
+    ax.legend(ncols=3, loc="upper left")
     ax.set_axisbelow(True)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 7)
 
@@ -266,18 +292,19 @@ def fig8():
            lw=0.5, label="Encode MB/s")
     ax.set_ylabel("Encode throughput (MB/s)")
     ax3 = ax.twinx()
-    ax3.bar(x + w / 2, [mp[k]["ratio"] for k in keys], w, color=PURPLE, edgecolor="black",
+    ax3.bar(x + w / 2, [1 / mp[k]["ratio"] for k in keys], w, color=PURPLE, edgecolor="black",
             lw=0.5, label="Compression ratio")
-    ax3.set_ylabel("Compression ratio")
+    ax3.set_ylabel(RATIO_LABEL)
     ax3.grid(False)
-    ax.set_xticks(x, labels, fontsize=9)
+    ax.set_xticks(x, labels)
     plabel(ax, "(b)")
     ax.set_ylim(0, 430)
-    ax3.set_ylim(0, 0.10)
+    ax3.set_ylim(0, 82)
     h1, l1 = ax.get_legend_handles_labels()
     h3, l3 = ax3.get_legend_handles_labels()
-    ax.legend(h1 + h3, l1 + l3, loc="upper center", fontsize=9)
+    ax.legend(h1 + h3, l1 + l3, loc="upper right")
     ax.set_axisbelow(True)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 8)
 
@@ -297,27 +324,29 @@ def fig9():
                               ("gorilla_like", "Rounded delta", "#8c564b", "*")]:
             r = RW[ds].get(m)
             if r and "metrics" in r and r["metrics"]["rmse"] > 1e-12 and r["metrics"]["rmse"] < 1e10:
-                ax.plot(r["ratio"], r["metrics"]["rmse"], mk, color=c, ms=7,
+                ax.plot(1 / r["ratio"], r["metrics"]["rmse"], mk, color=c, ms=7,
                         label=lab if ds == "uci_air_quality" else None)
         for tol in ["0.1", "0.01", "0.001", "0.0001"]:
             r = RW[ds].get(f"zfp_tol_{tol}")
             if r:
-                ax.plot(r["ratio"], max(r["metrics"]["rmse"], 1e-7), "P", color=BLUE, ms=7,
+                ax.plot(1 / r["ratio"], max(r["metrics"]["rmse"], 1e-7), "P", color=BLUE, ms=7,
                         label="ZFP" if (ds == "uci_air_quality" and tol == "0.1") else None)
         for mode, c, mk, lab in [("abs", GREEN, "^", "Enhanced (abs)"), ("rel", PURPLE, "d", "Enhanced (rel)")]:
             sweep = sorted([r for k, r in LR[ds].items()
                             if r["candidate"] == "C2_bank" and r["mode"] == mode],
                            key=lambda r: r["ratio"])
-            ax.plot([r["ratio"] for r in sweep], [r["rmse"] for r in sweep], mk + "-", color=c,
+            ax.plot([1 / r["ratio"] for r in sweep], [r["rmse"] for r in sweep], mk + "-", color=c,
                     ms=5, lw=1.2, label=lab if ds == "uci_air_quality" else None)
         ax.set_xscale("log")
         ax.set_yscale("log")
-        ax.set_xlabel("Compression ratio")
+        if ds == "uci_appliances_energy":
+            ax.set_xlabel(RATIO_LABEL)
         plabel(ax, f"{letters[ds]} {nm}")
         if ds == "uci_air_quality":
             ax.set_ylabel("RMSE")
-    fig.legend(loc="lower center", ncols=4, fontsize=9, frameon=True)
-    fig.tight_layout(rect=[0, 0.13, 1, 1])
+    shrink(fig, 8)
+    fig.legend(loc="lower center", ncols=4, fontsize=8, frameon=True)
+    fig.tight_layout(rect=[0, 0.12, 1, 1])
     save(fig, 9)
 
 
@@ -367,24 +396,33 @@ def fig11():
     }
     paa = [MP[f"paa_{s}"] for s in (1024, 4096, 16384)]
     zfp = [MP[f"zfp_tol_{t}"] for t in ("0.1", "0.01", "0.001")]
+    iso = json.load(open(os.path.join(LAT, "iso_rmse.json")))
+    sz3_full = sorted([(1 / p["ratio"], p["rmse"]) for p in iso["metropt3"]["sz3"]
+                       if p["rmse"] > 0 and p["ratio"] > 0])
     for ax, met, lab, letter in [(axes[0], "rmse", "RMSE", "(a)"),
                                  (axes[1], "smape", "SMAPE", "(b)")]:
         for key, (pts, c, mk, slab) in series.items():
-            xs = [p["ratio"] for p in pts]
+            xs = [1 / p["ratio"] for p in pts]
             ys = [max(p[met], 1e-6) for p in pts]
             ax.plot(xs, ys, mk + "-", color=c, ms=6, lw=1.3, label=slab)
-        ax.plot([p["ratio"] for p in paa], [max(p[met], 1e-6) for p in paa], "v", color=ORANGE,
-                ms=7, label="PAA")
-        ax.plot([p["ratio"] for p in zfp], [max(p[met], 1e-6) for p in zfp], "P", color=BLUE,
+        ax.plot([1 / p["ratio"] for p in paa], [max(p[met], 1e-6) for p in paa], "v",
+                color=ORANGE, ms=7, label="PAA")
+        ax.plot([1 / p["ratio"] for p in zfp], [max(p[met], 1e-6) for p in zfp], "P", color=BLUE,
                 ms=7, label="ZFP")
+        if met == "rmse":
+            ax.plot([p[0] for p in sz3_full], [max(p[1], 1e-6) for p in sz3_full], "s-",
+                    color="#e377c2", ms=4, lw=1.1, label="SZ3")
         dz = MP["delta_zstd"]
-        ax.axvline(dz["ratio"], color="black", ls=":", lw=1.2, label="Delta+Zstd (lossless)")
+        ax.axvline(1 / dz["ratio"], color="black", ls=":", lw=1.2, label="Delta+Zstd (lossless)")
         ax.set_xscale("log")
         ax.set_yscale("log")
-        ax.set_xlabel("Compression ratio")
+        ax.set_xlim(1.5, 3000)
+        ax.set_xticks([10, 100, 1000], ["10", "100", "1000"])
+        ax.set_xlabel(RATIO_LABEL)
         ax.set_ylabel(lab)
         plabel(ax, letter)
-        ax.legend(fontsize=9)
+        ax.legend(loc="lower right" if met == "rmse" else "best")
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 11)
 
@@ -412,15 +450,15 @@ def fig12():
     for ds, dsl in [("uci_air_quality", "o"), ("uci_appliances_energy", "s"), ("uci_metro_traffic", "^")]:
         sweep = sorted([r for k, r in LR[ds].items() if r["candidate"] == "C2_bank" and r["mode"] == "rel"],
                        key=lambda r: r["ratio"])
-        ax.plot([r["ratio"] for r in sweep], [max(r["smape"], 1e-6) for r in sweep], dsl + "-",
+        ax.plot([1 / r["ratio"] for r in sweep], [max(r["smape"], 1e-6) for r in sweep], dsl + "-",
                 color=PURPLE, ms=4, lw=1)
         for tol in ["0.1", "0.001"]:
             r = RW[ds].get(f"zfp_tol_{tol}")
             if r:
-                ax.plot(r["ratio"], max(r["metrics"].get("smape", 0), 1e-6), dsl, color=BLUE, ms=6)
+                ax.plot(1 / r["ratio"], max(r["metrics"].get("smape", 0), 1e-6), dsl, color=BLUE, ms=6)
         r = RW[ds].get("paa")
         if r:
-            ax.plot(r["ratio"], max(r["metrics"].get("smape", 0), 1e-6), dsl, color=ORANGE, ms=6)
+            ax.plot(1 / r["ratio"], max(r["metrics"].get("smape", 0), 1e-6), dsl, color=ORANGE, ms=6)
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], color=PURPLE, marker="s", ls="-", label="Enhanced (rel) sweep"),
                Line2D([], [], color=BLUE, marker="s", ls="", label="ZFP"),
@@ -430,10 +468,11 @@ def fig12():
                Line2D([], [], color="k", marker="^", ls="", label="Metro Traffic")]
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Compression ratio")
+    ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("SMAPE")
     plabel(ax, "(b)")
-    ax.legend(handles=handles, fontsize=8.5, ncols=2)
+    ax.legend(handles=handles, ncols=2)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 12)
 
@@ -450,11 +489,13 @@ def fig15():
     sd = anom.std(axis=1, keepdims=True) + 1e-9
     fig, ax = newfig(15)
     im = ax.imshow((anom - mu) / sd, aspect="auto", cmap="viridis", interpolation="nearest")
-    ax.set_ylabel("Variable")
-    ax.set_xlabel("Time step")
+    ax.set_ylabel("Variable index")
+    ax.set_xlabel("Time step (color: z-scored signal value)")
     plabel(ax, "(a)")
     ax.grid(False)
-    fig.colorbar(im, ax=ax, fraction=0.025)
+    cb = fig.colorbar(im, ax=ax, fraction=0.025)
+    cb.ax.set_title("z-score", fontsize=8.5)
+    shrink(fig, 8.5)
     fig.tight_layout(pad=1.2)
     save(fig, 15)
 
@@ -464,12 +505,12 @@ def fig13():
     fig, axes = newfig(13, nrows=2, ncols=1)
     for ax, g, letter in [(axes[0], gn, "(b)"), (axes[1], ga, "(c)")]:
         im = ax.imshow(g, aspect="auto", cmap="gray", vmin=64, vmax=192, interpolation="nearest")
-        ax.set_ylabel("Variable")
+        ax.set_ylabel("Variable index")
         ax.grid(False)
         cb = fig.colorbar(im, ax=ax, fraction=0.025)
-        cb.set_label("Pixel value", fontsize=10)
+        cb.ax.set_title("Pixel value", fontsize=8.5)
         if ax is axes[1]:
-            ax.set_xlabel("Time step")
+            ax.set_xlabel("Time step (color: quantized-change pixel value)")
         plabel(ax, letter)
     for v, lab, tx, lx, ly in zip(marks, ["spike", "level shift", "oscillation"],
                                   [400, 600, 650], [255, 455, 505], [0.6, 3.4, 7.2]):
@@ -479,6 +520,7 @@ def fig13():
                                    boxstyle="round,pad=0.25"),
                          arrowprops=dict(arrowstyle="-|>", color=RED, lw=2,
                                          shrinkA=2, shrinkB=1))
+    shrink(fig, 8.5)
     fig.tight_layout(pad=1.2)
     save(fig, 13)
 
@@ -495,18 +537,16 @@ def fig14():
     colors = [BLUE, GREEN, PURPLE, RED]
     for i, (name, r) in enumerate(pipes):
         ax.bar(x[i] - w, r["f1"], w, color=colors[i], edgecolor="black", lw=0.5)
-        ax.bar(x[i], r["precision"], w, color=colors[i], alpha=0.72, hatch="//",
-               edgecolor="black", lw=0.5)
-        ax.bar(x[i] + w, r["recall"], w, color=colors[i], alpha=0.5, hatch="\\\\",
-               edgecolor="black", lw=0.5)
-        ax.text(x[i] - w, r["f1"] + 0.02, f"{r['f1']:.3f}", ha="center", fontsize=9,
+        ax.bar(x[i], r["precision"], w, color=colors[i], alpha=0.62, edgecolor="black", lw=0.5)
+        ax.bar(x[i] + w, r["recall"], w, color=colors[i], alpha=0.32, edgecolor="black", lw=0.5)
+        ax.text(x[i] - w, r["f1"] + 0.02, f"{r['f1']:.3f}", ha="center", fontsize=8.5,
                 fontweight="bold")
     from matplotlib.patches import Patch
-    ax.legend(handles=[Patch(facecolor="#bbb", edgecolor="k", label="F1-Score"),
-                       Patch(facecolor="#bbb", edgecolor="k", hatch="//", label="Precision"),
-                       Patch(facecolor="#bbb", edgecolor="k", hatch="\\\\", label="Recall")],
-              loc="upper right", fontsize=9)
-    ax.set_xticks(x, [p[0] for p in pipes], fontsize=9, rotation=18)
+    ax.legend(handles=[Patch(facecolor="#555", edgecolor="k", label="F1-Score"),
+                       Patch(facecolor="#999", edgecolor="k", label="Precision"),
+                       Patch(facecolor="#ccc", edgecolor="k", label="Recall")],
+              loc="upper right")
+    ax.set_xticks(x, [p[0] for p in pipes], rotation=18)
     ax.set_ylim(0, 1.12)
     ax.set_ylabel("Score")
     plabel(ax, "(a)")
@@ -517,38 +557,20 @@ def fig14():
     vals = [at["direct_wps"], at["decode_detect_wps"]]
     ax.barh(names, vals, color=[GREEN, RED], edgecolor="black", lw=0.5, height=0.45)
     for i, v in enumerate(vals):
-        ax.text(v + 18, i, f"{v:.0f} w/s", va="center", fontsize=9, fontweight="bold")
+        ax.text(v + 18, i, f"{v:.0f} w/s", va="center", fontsize=8.5, fontweight="bold")
     ax.set_xlabel("Throughput (windows/s)")
     plabel(ax, "(b)")
     ax.set_xlim(0, max(vals) * 1.28)
     ax.set_axisbelow(True)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 14)
 
 
-# ---- Fig 17 (standalone): iso-RMSE size comparison vs ZFP ----
+# ---- Fig 17 (standalone): size advantage at matched RMSE ----
 def fig17():
     iso = json.load(open(os.path.join(LAT, "iso_rmse.json")))
-    fig, axes = plt.subplots(nrows=2, figsize=(1044 / 300, 1500 / 300))
-
-    ax = axes[0]
-    d = iso["metropt3"]
-    t = sorted([(p["rmse"], 100 * p["ratio"]) for p in d["tracq"] if p["rmse"] > 0])
-    z = sorted([(p["rmse"], 100 * p["ratio"]) for p in d["zfp"] if p["rmse"] > 0])
-    s3 = sorted([(p["rmse"], 100 * p["ratio"]) for p in d["sz3"] if p["rmse"] > 0])
-    ax.plot([p[0] for p in t], [p[1] for p in t], "^-", color=GREEN, ms=5, lw=1.6,
-            label="Enhanced TRACQ")
-    ax.plot([p[0] for p in z], [p[1] for p in z], "P-", color=BLUE, ms=6, lw=1.6, label="ZFP")
-    ax.plot([p[0] for p in s3], [p[1] for p in s3], "s-", color=ORANGE, ms=4.5, lw=1.6,
-            label="SZ3")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("RMSE (matched)")
-    ax.set_ylabel("Encoded size (% of original)")
-    plabel(ax, "(a)")
-    ax.legend(fontsize=9)
-
-    ax = axes[1]
+    fig, ax = plt.subplots(figsize=(1044 / 300, 780 / 300))
     names = {"air_quality": ("Air Quality", RED, "o"),
              "appliances": ("Appliances", GREEN, "s"),
              "metro_traffic": ("Metro Traffic", PURPLE, "d"),
@@ -556,13 +578,14 @@ def fig17():
     for key, (lab, c, mk) in names.items():
         rows = iso[key]["iso3"]
         ax.plot([r["rmse"] for r in rows], [r["adv_best"] for r in rows], mk + "-",
-                color=c, ms=5, lw=1.5, label=lab)
+                color=c, ms=4.5, lw=1.4, label=lab)
     ax.axhline(1.0, color="black", ls=":", lw=1.2)
     ax.set_xscale("log")
     ax.set_xlabel("RMSE (matched)")
     ax.set_ylabel("Best HPC size ÷ TRACQ size")
-    plabel(ax, "(b)")
-    ax.legend(fontsize=9)
+    ax.set_ylim(0.6, 5.4)
+    ax.legend(ncols=2, loc="upper left")
+    shrink(fig, 8.5)
     fig.tight_layout(pad=1.1)
     fig.savefig(os.path.join(OUT, "image17.png"), dpi=300)
     plt.close(fig)
@@ -622,6 +645,7 @@ def fig18():
     ax2.set_ylabel("Encode throughput (MB/s per core)", color=GREEN)
     ax2.set_ylim(0, max(enc) * 1.25)
     ax2.grid(False)
+    shrink(fig, 8.5)
     fig.tight_layout(pad=1.1)
     fig.savefig(os.path.join(OUT, "image18.png"), dpi=300)
     plt.close(fig)
@@ -661,6 +685,7 @@ def fig16():
     plabel(ax, "(b)")
     ax.set_ylim(0, None)
     ax.legend(fontsize=9)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 16)
 
