@@ -315,6 +315,9 @@ def fig9():
              "uci_metro_traffic": "Metro Traffic"}
     fig, axes = newfig(9, ncols=3)
     letters = {"uci_air_quality": "(a)", "uci_appliances_energy": "(b)", "uci_metro_traffic": "(c)"}
+    iso = json.load(open(os.path.join(LAT, "iso_rmse.json")))
+    iso_key = {"uci_air_quality": "air_quality", "uci_appliances_energy": "appliances",
+               "uci_metro_traffic": "metro_traffic"}
     for ax, (ds, nm) in zip(axes, names.items()):
         pts = []
         for m, lab, c, mk in [("tracq_orig_8bit", "Base 8b", RED, "o"),
@@ -326,11 +329,14 @@ def fig9():
             if r and "metrics" in r and r["metrics"]["rmse"] > 1e-12 and r["metrics"]["rmse"] < 1e10:
                 ax.plot(1 / r["ratio"], r["metrics"]["rmse"], mk, color=c, ms=7,
                         label=lab if ds == "uci_air_quality" else None)
-        for tol in ["0.1", "0.01", "0.001", "0.0001"]:
-            r = RW[ds].get(f"zfp_tol_{tol}")
-            if r:
-                ax.plot(1 / r["ratio"], max(r["metrics"]["rmse"], 1e-7), "P", color=BLUE, ms=7,
-                        label="ZFP" if (ds == "uci_air_quality" and tol == "0.1") else None)
+        zsw = sorted([(1 / p["ratio"], max(p["rmse"], 1e-7)) for p in iso[iso_key[ds]]["zfp"]
+                      if p["ratio"] > 0 and p["rmse"] > 0])
+        ax.plot([p[0] for p in zsw], [p[1] for p in zsw], "P-", color=BLUE, ms=5, lw=1.2,
+                label="ZFP" if ds == "uci_air_quality" else None)
+        ssw = sorted([(1 / p["ratio"], max(p["rmse"], 1e-7)) for p in iso[iso_key[ds]]["sz3"]
+                      if p["ratio"] > 0 and p["rmse"] > 0])
+        ax.plot([p[0] for p in ssw], [p[1] for p in ssw], "s-", color="#e377c2", ms=4, lw=1.2,
+                label="SZ3" if ds == "uci_air_quality" else None)
         for mode, c, mk, lab in [("abs", GREEN, "^", "Enhanced (abs)"), ("rel", PURPLE, "d", "Enhanced (rel)")]:
             sweep = sorted([r for k, r in LR[ds].items()
                             if r["candidate"] == "C2_bank" and r["mode"] == mode],
@@ -345,7 +351,7 @@ def fig9():
         if ds == "uci_air_quality":
             ax.set_ylabel("RMSE")
     shrink(fig, 8)
-    fig.legend(loc="lower center", ncols=4, fontsize=8, frameon=True)
+    fig.legend(loc="lower center", ncols=5, fontsize=8, frameon=True)
     fig.tight_layout(rect=[0, 0.12, 1, 1])
     save(fig, 9)
 
@@ -483,18 +489,29 @@ def _visual_demo_data():
     return d["normal"], d["anomalous"], d["grid_normal"], d["grid_anom"], d["marks"]
 
 
+def _var_ticks(ax, n):
+    ax.set_yticks(range(n), [f"$x_{{{i + 1}}}$" for i in range(n)])
+
+
 def fig15():
     normal, anom, gn, ga, marks = _visual_demo_data()
-    mu = anom.mean(axis=1, keepdims=True)
-    sd = anom.std(axis=1, keepdims=True) + 1e-9
+    # the unquantized counterpart of the stored grid: per-step change in the
+    # rel-mode transform domain, in lattice-step units, offset to mid-gray 128
+    x = anom.astype(np.float64)
+    med = np.median(np.abs(x), axis=1)
+    s = np.maximum(0.01 * med, 1e-12)
+    s = np.where(med <= 0, np.maximum(x.std(axis=1) * 0.01, 1e-12), s)
+    q = 2 * np.log(1.01)
+    d = np.diff(np.arcsinh(x / s[:, None]), axis=1) / q + 128
     fig, ax = newfig(15)
-    im = ax.imshow((anom - mu) / sd, aspect="auto", cmap="viridis", interpolation="nearest")
-    ax.set_ylabel("Variable index")
-    ax.set_xlabel("Time step (color: z-scored signal value)")
+    im = ax.imshow(d, aspect="auto", cmap="gray", vmin=64, vmax=192, interpolation="nearest")
+    ax.set_ylabel("Variable")
+    _var_ticks(ax, d.shape[0])
+    ax.set_xlabel("Time step (color: relative change, 128 = no change)")
     plabel(ax, "(a)")
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025)
-    cb.ax.set_title("z-score", fontsize=8.5)
+    cb.ax.set_title("Pixel value", fontsize=8.5)
     shrink(fig, 8.5)
     fig.tight_layout(pad=1.2)
     save(fig, 15)
@@ -505,7 +522,8 @@ def fig13():
     fig, axes = newfig(13, nrows=2, ncols=1)
     for ax, g, letter in [(axes[0], gn, "(b)"), (axes[1], ga, "(c)")]:
         im = ax.imshow(g, aspect="auto", cmap="gray", vmin=64, vmax=192, interpolation="nearest")
-        ax.set_ylabel("Variable index")
+        ax.set_ylabel("Variable")
+        _var_ticks(ax, g.shape[0])
         ax.grid(False)
         cb = fig.colorbar(im, ax=ax, fraction=0.025)
         cb.ax.set_title("Pixel value", fontsize=8.5)
