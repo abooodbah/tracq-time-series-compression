@@ -50,6 +50,8 @@ for p in list(root.iter(q("p"))):
             ins.getparent().remove(ins)
             removed_ins += 1
     if not visible_text(p).strip():
+        if p.find(q("pPr") + "/" + q("sectPr")) is not None:
+            continue  # the note was typed into a section-break paragraph
         p.getparent().remove(p)
         removed_para += 1
 
