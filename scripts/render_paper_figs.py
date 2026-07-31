@@ -186,13 +186,13 @@ def fig5():
         ax.plot([1 / p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=5,
                 alpha=0.85, lw=1, label=lab)
     z = sorted(rd["zfp"], key=lambda p: p["ratio"])
-    ax.plot([1 / p["ratio"] for p in z], [p["rmse"] for p in z], "P-", color=BLUE, ms=7,
-            alpha=0.85, lw=1, label="ZFP")
+    ax.plot([1 / p["ratio"] for p in z], [p["rmse"] for p in z], "P-", color=BLUE, ms=5,
+            alpha=0.85, lw=1.2, label="ZFP")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("RMSE")
-    ax.legend(loc="upper left", fontsize=9, ncols=2, frameon=True)
+    ax.legend(loc="lower right", fontsize=9, ncols=2, frameon=True)
     fig.tight_layout()
     save(fig, 5)
 
@@ -525,8 +525,7 @@ def fig13():
         ax.grid(False)
         cb = fig.colorbar(im, ax=ax, fraction=0.025)
         cb.ax.set_title("Pixel value", fontsize=8.5)
-        if ax is axes[1]:
-            ax.set_xlabel("Time step (color: quantized-change pixel value)")
+        ax.set_xlabel("Time step (color: quantized-change pixel value)")
         plabel(ax, letter)
     for v, lab, tx, lx, ly in zip(marks, ["spike", "level shift", "oscillation"],
                                   [400, 600, 650], [255, 455, 505], [0.6, 3.4, 7.2]):
