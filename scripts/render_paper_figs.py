@@ -495,23 +495,21 @@ def _var_ticks(ax, n):
 
 def fig15():
     normal, anom, gn, ga, marks = _visual_demo_data()
-    # the unquantized counterpart of the stored grid: per-step change in the
-    # rel-mode transform domain, in lattice-step units, offset to mid-gray 128
+    # each variable's departure from its base (first) value over time — the
+    # quantity the codec reconstructs by accumulation from the stored baseline;
+    # scaled per variable for a shared display range
     x = anom.astype(np.float64)
-    med = np.median(np.abs(x), axis=1)
-    s = np.maximum(0.01 * med, 1e-12)
-    s = np.where(med <= 0, np.maximum(x.std(axis=1) * 0.01, 1e-12), s)
-    q = 2 * np.log(1.01)
-    d = np.diff(np.arcsinh(x / s[:, None]), axis=1) / q + 128
+    d = x - x[:, :1]
+    d = d / np.maximum(np.abs(d).max(axis=1, keepdims=True), 1e-12)
     fig, ax = newfig(15)
-    im = ax.imshow(d, aspect="auto", cmap="gray", vmin=64, vmax=192, interpolation="nearest")
+    im = ax.imshow(d, aspect="auto", cmap="RdBu_r", vmin=-1, vmax=1, interpolation="nearest")
     ax.set_ylabel("Variable")
     _var_ticks(ax, d.shape[0])
-    ax.set_xlabel("Time step (color: relative change, 128 = no change)")
+    ax.set_xlabel("Time step (color: change from base value, per-variable scale)")
     plabel(ax, "(a)")
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025)
-    cb.ax.set_title("Pixel value", fontsize=8.5)
+    cb.ax.set_title("Δ from base", fontsize=8.5)
     shrink(fig, 8.5)
     fig.tight_layout(pad=1.2)
     save(fig, 15)
