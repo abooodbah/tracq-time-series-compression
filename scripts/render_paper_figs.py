@@ -477,7 +477,7 @@ def fig12():
     ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("SMAPE")
     plabel(ax, "(b)")
-    ax.legend(handles=handles, ncols=2, loc="lower right")
+    ax.legend(handles=handles, ncols=1, loc="lower right", fontsize=8)
     shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 12)
