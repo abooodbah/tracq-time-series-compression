@@ -361,14 +361,14 @@ def fig10():
     names = {"uci_air_quality": "Air Quality", "uci_appliances_energy": "Appliances",
              "uci_metro_traffic": "Metro Traffic"}
     methods = [("tracq_orig_16bit", "Base 16b", RED),
-               ("LATTICE_1e-2", "Enh. (eps=1e-2)", GREEN),
-               ("LATTICE_1e-3", "Enh. (eps=1e-3)", "#1a7a1a"),
-               ("LATTICE_1e-4", "Enh. (eps=1e-4)", "#0b4d0b"),
+               ("LATTICE_1e-2", "Enh. (0.01)", GREEN),
+               ("LATTICE_1e-3", "Enh. (0.001)", "#1a7a1a"),
+               ("LATTICE_1e-4", "Enh. (0.0001)", "#0b4d0b"),
                ("paa", "PAA-64", ORANGE),
                ("sax", "SAX-64", GRAY),
                ("gorilla_like", "Rounded delta", "#8c564b"),
-               ("zfp_tol_0.1", "ZFP (1e-1)", BLUE),
-               ("zfp_tol_0.001", "ZFP (1e-3)", "#0b3d6b")]
+               ("zfp_tol_0.1", "ZFP (0.1)", BLUE),
+               ("zfp_tol_0.001", "ZFP (0.001)", "#0b3d6b")]
     x = np.arange(3)
     w = 0.09
     fig, ax = newfig(10)
@@ -435,15 +435,16 @@ def fig11():
 
 # ---- Fig 12: SMAPE analysis ----
 def fig12():
+    ZS = json.load(open(os.path.join(LAT, "zfp_smape_dense.json")))
     pv = PT["SMAPE_pervar"]
     order = np.argsort(pv["var_mean_abs"])
     fig, axes = newfig(12, ncols=2)
     ax = axes[0]
     x = np.arange(len(order))
     for key, c, mk, lab in [("base_16bit", RED, "o", "Base 16-bit"),
-                            ("enh_rel_eps1e-2", GREEN, "^", "Enhanced (rel, eps=1e-2)"),
-                            ("enh_rel_eps1e-3", PURPLE, "d", "Enhanced (rel, eps=1e-3)"),
-                            ("zfp_tol_0.1", BLUE, "P", "ZFP (tol=1e-1)")]:
+                            ("enh_rel_eps1e-2", GREEN, "^", "Enhanced (rel, 0.01)"),
+                            ("enh_rel_eps1e-3", PURPLE, "d", "Enhanced (rel, 0.001)"),
+                            ("zfp_tol_0.1", BLUE, "P", "ZFP (0.1)")]:
         if key in pv:
             ax.plot(x, np.array(pv[key])[order], mk + "-", color=c, ms=4, lw=1, label=lab)
     ax.set_yscale("log")
@@ -456,28 +457,27 @@ def fig12():
     for ds, dsl in [("uci_air_quality", "o"), ("uci_appliances_energy", "s"), ("uci_metro_traffic", "^")]:
         sweep = sorted([r for k, r in LR[ds].items() if r["candidate"] == "C2_bank" and r["mode"] == "rel"],
                        key=lambda r: r["ratio"])
-        ax.plot([1 / r["ratio"] for r in sweep], [max(r["smape"], 1e-6) for r in sweep], dsl + "-",
+        ax.plot([1 / r["ratio"] for r in sweep], [r["smape"] for r in sweep], dsl + "-",
                 color=PURPLE, ms=4, lw=1)
-        for tol in ["0.1", "0.001"]:
-            r = RW[ds].get(f"zfp_tol_{tol}")
-            if r:
-                ax.plot(1 / r["ratio"], max(r["metrics"].get("smape", 0), 1e-6), dsl, color=BLUE, ms=6)
+        zs = sorted([(1 / p["ratio"], p["smape"]) for p in ZS[ds] if p["ratio"] > 0])
+        ax.plot([p[0] for p in zs], [p[1] for p in zs], dsl + "-", color=BLUE, ms=4, lw=1)
         r = RW[ds].get("paa")
         if r:
-            ax.plot(1 / r["ratio"], max(r["metrics"].get("smape", 0), 1e-6), dsl, color=ORANGE, ms=6)
+            ax.plot(1 / r["ratio"], r["metrics"].get("smape", 0), dsl, color=ORANGE, ms=6)
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], color=PURPLE, marker="s", ls="-", label="Enhanced (rel) sweep"),
-               Line2D([], [], color=BLUE, marker="s", ls="", label="ZFP"),
+               Line2D([], [], color=BLUE, marker="s", ls="-", label="ZFP sweep"),
                Line2D([], [], color=ORANGE, marker="s", ls="", label="PAA"),
                Line2D([], [], color="k", marker="o", ls="", label="Air Quality"),
                Line2D([], [], color="k", marker="s", ls="", label="Appliances"),
                Line2D([], [], color="k", marker="^", ls="", label="Metro Traffic")]
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_ylim(8e-7, 1.5)
     ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("SMAPE")
     plabel(ax, "(b)")
-    ax.legend(handles=handles, ncols=2)
+    ax.legend(handles=handles, ncols=2, loc="lower right")
     shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 12)
