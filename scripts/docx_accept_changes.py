@@ -102,6 +102,15 @@ def accept(path):
         if r is not None and r.getparent() is not None:
             r.getparent().remove(r)
 
+    # accept tracked formatting: keep the current properties, drop the
+    # change records Word keeps alongside them
+    for tag in ("w:pPrChange", "w:rPrChange", "w:sectPrChange",
+                "w:tblPrChange", "w:tcPrChange", "w:trPrChange",
+                "w:numberingChange", "w:cellIns", "w:cellDel"):
+        for ch in list(root.iter(q(tag))):
+            if ch.getparent() is not None:
+                ch.getparent().remove(ch)
+
     #   3. hollow math left behind (all content deleted) renders as an empty
     #      box: drop any oMath/oMathPara with no math text remaining
     for om in list(root.iter(M + "oMathPara")) + list(root.iter(M + "oMath")):
