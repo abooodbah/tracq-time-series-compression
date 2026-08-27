@@ -43,6 +43,14 @@ def accept(path):
             if owner is not None and owner.getparent() is not None:
                 owner.getparent().remove(owner)
 
+    # a w:del inside w:trPr marks the whole table row as deleted: accepting
+    # means the row goes away, not just its marker
+    for trpr in list(root.iter(q("w:trPr"))):
+        if trpr.find(q("w:del")) is not None:
+            tr = trpr.getparent()
+            if tr is not None and tr.getparent() is not None:
+                tr.getparent().remove(tr)
+
     # remove deletions (content deletions and paragraph-mark markers alike)
     for d in list(root.iter(q("w:del"))):
         d.getparent().remove(d)
@@ -102,11 +110,19 @@ def accept(path):
         if r is not None and r.getparent() is not None:
             r.getparent().remove(r)
 
+    # a table cell must keep at least one block element: dropping a cell's
+    # only del-marked paragraph would otherwise corrupt the document
+    block = {q("w:p"), q("w:tbl"), q("w:sdt"), q("w:customXml")}
+    for tc in root.iter(q("w:tc")):
+        if not any(c.tag in block for c in tc):
+            tc.append(tc.makeelement(q("w:p"), {}))
+
     # accept tracked formatting: keep the current properties, drop the
     # change records Word keeps alongside them
     for tag in ("w:pPrChange", "w:rPrChange", "w:sectPrChange",
-                "w:tblPrChange", "w:tcPrChange", "w:trPrChange",
-                "w:numberingChange", "w:cellIns", "w:cellDel"):
+                "w:tblPrChange", "w:tblPrExChange", "w:tblGridChange",
+                "w:tcPrChange", "w:trPrChange",
+                "w:numberingChange", "w:cellIns", "w:cellDel", "w:cellMerge"):
         for ch in list(root.iter(q(tag))):
             if ch.getparent() is not None:
                 ch.getparent().remove(ch)
