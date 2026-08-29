@@ -30,6 +30,14 @@ def accept(path):
     tree = etree.parse(path)
     root = tree.getroot()
 
+    # collect del-marked paragraph marks by element identity FIRST: earlier
+    # destructive passes (deleted table rows in particular) remove whole w:p
+    # elements, so index-based matching against a re-parse silently merges
+    # the wrong paragraphs
+    marked_paras = [p for p in root.iter(q("w:p"))
+                    if p.find(q("w:pPr") + "/" + q("w:rPr") + "/" + q("w:del"))
+                    is not None]
+
     # Word re-encodes tracked-deleted math three ways; resolve them before the
     # generic pass would strip the markers and lose the deletion:
     #   1. a w:del marker directly inside an m:r deletes that math run
@@ -67,17 +75,12 @@ def accept(path):
             idx += 1
         parent.remove(ins)
 
-    # paragraphs whose mark was deleted: re-read the pre-acceptance file to
-    # find them (no w:p is ever nested in w:ins/w:del, so indices align)
-    orig = etree.parse(path)
-    marked = set()
-    for i, p in enumerate(orig.getroot().iter(q("w:p"))):
-        d = p.find(q("w:pPr") + "/" + q("w:rPr") + "/" + q("w:del"))
-        if d is not None:
-            marked.add(i)
-    paras = list(root.iter(q("w:p")))
-    for i in sorted(marked, reverse=True):
-        p = paras[i]
+    # paragraphs whose mark was deleted, in reverse document order so chained
+    # merges cascade correctly; rows already removed drop out via the parent
+    # check
+    for p in reversed(marked_paras):
+        if p.getparent() is None:
+            continue
         runs = [r for r in p.iter(q("w:r")) if r.getparent().tag != q("w:pPr")]
         text = "".join(t.text or "" for t in p.iter(q("w:t")))
         parent = p.getparent()
