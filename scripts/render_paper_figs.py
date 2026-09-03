@@ -91,7 +91,7 @@ def fig1():
     ab = FD["ablation"]
     rows = ["sensor", "financial", "iot", "electricity"]
     cols = ["base", "lattice_p1", "lattice_bank", "lattice_rel"]
-    col_labels = ["Baseline", "+Lattice", "+Pred.", "+Rel."]
+    col_labels = ["Naive Diff.", "+Lattice", "+Pred.", "TRACQ (rel)"]
     row_labels = ["Sensor", "Financial", "IoT", "Electricity"]
     M = np.array([[ab[r][c] for c in cols] for r in rows])
     fig, ax = newfig(1)
@@ -120,9 +120,9 @@ def fig2():
     ms = FD["multiscale"]
     scales = np.array(ms["scales"])
     fig, ax = newfig(2)
-    ax.plot(scales, ms["base"], "o-", color=RED, ms=3.5, lw=1.5, label="Base TRACQ (global clamp)")
-    ax.plot(scales, ms["enh_abs"], "^-", color=GREEN, ms=3.5, lw=1.5, label="Enhanced (absolute bound)")
-    ax.plot(scales, ms["enh_rel"], "d-", color=PURPLE, ms=3.5, lw=1.5, label="Enhanced (relative bound)")
+    ax.plot(scales, ms["base"], "o-", color=RED, ms=3.5, lw=1.5, label="Naive Diff. (global clamp)")
+    ax.plot(scales, ms["enh_abs"], "^-", color=GREEN, ms=3.5, lw=1.5, label="TRACQ (abs)")
+    ax.plot(scales, ms["enh_rel"], "d-", color=PURPLE, ms=3.5, lw=1.5, label="TRACQ (rel)")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Variable scale")
@@ -139,8 +139,8 @@ def fig3():
     t = d["t"]
     fig, axes = newfig(3, ncols=2)
     for ax, yscale, letter in zip(axes, ["linear", "log"], ["(a)", "(b)"]):
-        ax.plot(t, d["base"], color=RED, lw=2, label="Base TRACQ")
-        ax.plot(t, d["enh"], color=BLUE, lw=2, label="Enhanced")
+        ax.plot(t, d["base"], color=GRAY, lw=1.6, ls="--", label="Naive Diff. (ablation)")
+        ax.plot(t, d["enh"], color=BLUE, lw=2, label="TRACQ")
         ax.axhline(d["bound"], color="black", ls="--", lw=1.2,
                    label=f"Guaranteed bound ({d['bound']:.2f})")
         ax.set_yscale(yscale)
@@ -159,9 +159,9 @@ def fig4():
     fig, ax = newfig(4)
     b = rd["base"]
     ax.plot([1 / p["ratio"] for p in b], [p["rmse"] for p in b], "o-", color=RED, ms=7, lw=1.5,
-            label="Base TRACQ (8/16 bit)")
-    for key, c, m, lab in [("enh_abs", GREEN, "^", "Enhanced (absolute bound)"),
-                           ("enh_rel", PURPLE, "d", "Enhanced (relative bound)")]:
+            label="Naive Diff. (8/16 bit)")
+    for key, c, m, lab in [("enh_abs", GREEN, "^", "TRACQ (abs)"),
+                           ("enh_rel", PURPLE, "d", "TRACQ (rel)")]:
         pts = sorted(rd[key], key=lambda p: p["ratio"])
         ax.plot([1 / p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=6,
                 lw=1.5, label=lab)
@@ -178,10 +178,7 @@ def fig4():
 def fig5():
     rd = FD["rd_sensor"]
     fig, ax = newfig(5)
-    b = rd["base"]
-    ax.plot([1 / p["ratio"] for p in b], [p["rmse"] for p in b], "o", color=RED, ms=9,
-            alpha=0.75, label="Base")
-    for key, c, m, lab in [("enh_abs", GREEN, "^", "Enh. (abs)"), ("enh_rel", PURPLE, "D", "Enh. (rel)")]:
+    for key, c, m, lab in [("enh_abs", GREEN, "^", "TRACQ (abs)"), ("enh_rel", PURPLE, "D", "TRACQ (rel)")]:
         pts = sorted(rd[key], key=lambda p: p["ratio"])
         ax.plot([1 / p["ratio"] for p in pts], [p["rmse"] for p in pts], m + "-", color=c, ms=5,
                 alpha=0.85, lw=1, label=lab)
@@ -205,11 +202,9 @@ def fig6():
     w = 0.26
     fig, axes = newfig(6, ncols=2)
     for ax, key, letter in zip(axes, ["enc", "dec"], ["(a)", "(b)"]):
-        ax.bar(x - w, [th[s]["base"][key] for s in sizes], w, color=RED, edgecolor="black",
-               lw=0.5, label="Base TRACQ")
-        ax.bar(x, [th[s]["enh"][key] for s in sizes], w, color=GREEN, edgecolor="black",
-               lw=0.5, label="Enhanced TRACQ")
-        ax.bar(x + w, [th[s].get("zfp", {}).get(key, 0) for s in sizes], w, color=BLUE,
+        ax.bar(x - w / 2, [th[s]["enh"][key] for s in sizes], w, color=GREEN,
+               edgecolor="black", lw=0.5, label="TRACQ")
+        ax.bar(x + w / 2, [th[s].get("zfp", {}).get(key, 0) for s in sizes], w, color=BLUE,
                edgecolor="black", lw=0.5, label="ZFP")
         ax.set_xticks(x, sizes, rotation=15, ha="right")
         ax.set_xlabel("Data size (variables × time)")
@@ -232,7 +227,7 @@ def fig7():
     enc = {ds: {} for ds in names}
     for ds in names:
         mb = raw[ds] / 1e6
-        for m, lab in [("gzip", "Gzip"), ("delta_zstd", "Delta+Zstd"), ("tracq_orig_8bit", "Base TRACQ"),
+        for m, lab in [("gzip", "Gzip"), ("delta_zstd", "Delta+Zstd"),
                        ("zfp_tol_0.001", "ZFP")]:
             r = RW[ds].get(m)
             if r and "encode_s" in r:
@@ -242,15 +237,15 @@ def fig7():
                            header=None).values.T.astype(np.float64)
         t0 = time.perf_counter()
         lattice.encode(data, eps=1e-3, mode="abs", predictors="p1", zstd_level=1)
-        enc[ds]["Enhanced TRACQ"] = mb / (time.perf_counter() - t0)
-    methods = ["Gzip", "Delta+Zstd", "Base TRACQ", "Enhanced TRACQ", "ZFP"]
-    colors = [GRAY, ORANGE, RED, GREEN, BLUE]
+        enc[ds]["TRACQ"] = mb / (time.perf_counter() - t0)
+    methods = ["Gzip", "Delta+Zstd", "TRACQ", "ZFP"]
+    colors = [GRAY, ORANGE, GREEN, BLUE]
     x = np.arange(len(names))
     w = 0.15
     fig, ax = newfig(7)
     for i, (m, c) in enumerate(zip(methods, colors)):
         vals = [enc[ds].get(m, 0) for ds in names]
-        ax.bar(x + (i - 2) * w, vals, w, color=c, edgecolor="black", lw=0.5, label=m)
+        ax.bar(x + (i - 1.5) * w, vals, w, color=c, edgecolor="black", lw=0.5, label=m)
     ax.set_xticks(x, list(names.values()))
     ax.set_ylabel("Encode throughput (MB/s)")
     ax.set_yscale("log")
@@ -320,9 +315,7 @@ def fig9():
                "uci_metro_traffic": "metro_traffic"}
     for ax, (ds, nm) in zip(axes, names.items()):
         pts = []
-        for m, lab, c, mk in [("tracq_orig_8bit", "Base 8b", RED, "o"),
-                              ("tracq_orig_16bit", "Base 16b", RED, "s"),
-                              ("paa", "PAA", ORANGE, "v"),
+        for m, lab, c, mk in [("paa", "PAA", ORANGE, "v"),
                               ("sax", "SAX", GRAY, "x"),
                               ("gorilla_like", "Rounded delta", "#8c564b", "*")]:
             r = RW[ds].get(m)
@@ -337,7 +330,7 @@ def fig9():
                       if p["ratio"] > 0 and p["rmse"] > 0])
         ax.plot([p[0] for p in ssw], [p[1] for p in ssw], "s-", color="#e377c2", ms=4, lw=1.2,
                 label="SZ3" if ds == "uci_air_quality" else None)
-        for mode, c, mk, lab in [("abs", GREEN, "^", "Enhanced (abs)"), ("rel", PURPLE, "d", "Enhanced (rel)")]:
+        for mode, c, mk, lab in [("abs", GREEN, "^", "TRACQ (abs)"), ("rel", PURPLE, "d", "TRACQ (rel)")]:
             sweep = sorted([r for k, r in LR[ds].items()
                             if r["candidate"] == "C2_bank" and r["mode"] == mode],
                            key=lambda r: r["ratio"])
@@ -360,10 +353,9 @@ def fig9():
 def fig10():
     names = {"uci_air_quality": "Air Quality", "uci_appliances_energy": "Appliances",
              "uci_metro_traffic": "Metro Traffic"}
-    methods = [("tracq_orig_16bit", "Base 16b", RED),
-               ("LATTICE_1e-2", "Enh. (0.01)", GREEN),
-               ("LATTICE_1e-3", "Enh. (0.001)", "#1a7a1a"),
-               ("LATTICE_1e-4", "Enh. (0.0001)", "#0b4d0b"),
+    methods = [("LATTICE_1e-2", "TRACQ (0.01)", GREEN),
+               ("LATTICE_1e-3", "TRACQ (0.001)", "#1a7a1a"),
+               ("LATTICE_1e-4", "TRACQ (0.0001)", "#0b4d0b"),
                ("paa", "PAA-64", ORANGE),
                ("sax", "SAX-64", GRAY),
                ("gorilla_like", "Rounded delta", "#8c564b"),
@@ -382,7 +374,7 @@ def fig10():
             else:
                 r = RW[ds].get(m)
                 vals.append(min(max(r["metrics"]["rmse"], 1e-4), 1e5) if r and "metrics" in r else 0)
-        ax.bar(x + (i - 4) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
+        ax.bar(x + (i - 3.5) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
     ax.set_yscale("log")
     ax.set_ylim(top=3e6)
     ax.set_xticks(x, list(names.values()))
@@ -397,8 +389,8 @@ def fig10():
 def fig11():
     fig, axes = newfig(11, ncols=2)
     series = {
-        "abs": ([(MP[f"C1_p1_abs_eps{e}"]) for e in ("0.1", "0.01", "0.001", "0.0001")], GREEN, "^", "Enhanced (abs)"),
-        "rel": ([(MP[f"C1_p1_rel_eps{e}"]) for e in ("0.1", "0.01", "0.001", "0.0001")], PURPLE, "d", "Enhanced (rel)"),
+        "abs": ([(MP[f"C1_p1_abs_eps{e}"]) for e in ("0.1", "0.01", "0.001", "0.0001")], GREEN, "^", "TRACQ (abs)"),
+        "rel": ([(MP[f"C1_p1_rel_eps{e}"]) for e in ("0.1", "0.01", "0.001", "0.0001")], PURPLE, "d", "TRACQ (rel)"),
     }
     paa = [MP[f"paa_{s}"] for s in (1024, 4096, 16384)]
     zfp = [MP[f"zfp_tol_{t}"] for t in ("0.1", "0.01", "0.001")]
@@ -441,12 +433,14 @@ def fig12():
     fig, axes = newfig(12, ncols=2)
     ax = axes[0]
     x = np.arange(len(order))
-    for key, c, mk, lab in [("base_16bit", RED, "o", "Base 16-bit"),
-                            ("enh_rel_eps1e-2", GREEN, "^", "Enhanced (rel, 0.01)"),
-                            ("enh_rel_eps1e-3", PURPLE, "d", "Enhanced (rel, 0.001)"),
+    for key, c, mk, lab in [("base_16bit", GRAY, "o", "Naive Diff. (16b)"),
+                            ("enh_rel_eps1e-2", GREEN, "^", "TRACQ (rel, 0.01)"),
+                            ("enh_rel_eps1e-3", PURPLE, "d", "TRACQ (rel, 0.001)"),
                             ("zfp_tol_0.1", BLUE, "P", "ZFP (0.1)")]:
         if key in pv:
-            ax.plot(x, np.array(pv[key])[order], mk + "-", color=c, ms=4, lw=1, label=lab)
+            ls = "--" if key == "base_16bit" else "-"
+            ax.plot(x, np.array(pv[key])[order], marker=mk, ls=ls, color=c, ms=4, lw=1,
+                    label=lab)
     ax.set_yscale("log")
     ax.set_xlabel("Variable (sorted by mean magnitude)")
     ax.set_ylabel("Per-variable SMAPE")
@@ -465,7 +459,7 @@ def fig12():
         if r:
             ax.plot(1 / r["ratio"], r["metrics"].get("smape", 0), dsl, color=ORANGE, ms=6)
     from matplotlib.lines import Line2D
-    handles = [Line2D([], [], color=PURPLE, marker="s", ls="-", label="Enhanced (rel) sweep"),
+    handles = [Line2D([], [], color=PURPLE, marker="s", ls="-", label="TRACQ (rel) sweep"),
                Line2D([], [], color=BLUE, marker="s", ls="-", label="ZFP sweep"),
                Line2D([], [], color=ORANGE, marker="s", ls="", label="PAA"),
                Line2D([], [], color="k", marker="o", ls="", label="Air Quality"),
