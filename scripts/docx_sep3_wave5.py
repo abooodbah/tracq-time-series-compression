@@ -81,6 +81,9 @@ EDITS = [
      "Fig. 8. Streaming scalability: (a) synthetic streams; (b) MetroPT-3 "
      "benchmark throughput and compression factor for TRACQ-Fast, "
      "TRACQ-Archival, and Gzip."),
+    # Fig. 8 was captioned but never cited in the body (layout-audit find)
+    ("rows. MetroPT-3 is processed in 10,000-step windows",
+     "rows (Fig. 8). MetroPT-3 is processed in 10,000-step windows"),
 ]
 
 
@@ -171,22 +174,26 @@ def reflow(ed):
     """Re-anchor the Section V frames for the post-deletion flow.
 
     The Wave-5 deletions freed roughly half a column; with every anchor left
-    in place the slack beached pages 6 and 7. Final placement: Fig. 14 moves
-    after the matched-operating-points sentence; Fig. 2 (top) anchors after
-    the Fig. 4 lead-in and Fig. 3 (bottom) after the verification paragraph,
-    so the drift discussion fills page 6 and the rate-distortion prose plus
-    the in-column Figs. 4 and 5 fill the band between the two frames; Fig. 7
-    leaves the Fig. 7/8 stack and becomes a bottom frame on its citation
-    page, which lets the throughput and Table III text fill that page, with
-    Fig. 8 alone topping the next.
+    in place the slack beached pages 6 and 7, and Figs. 2 and 3 drifted onto
+    the page after their discussion. Final placement keeps each figure with
+    its own text: Fig. 2 is a bottom frame on the multi-scale discussion
+    page, anchored directly after the paragraph that cites it; Fig. 3 is a
+    bottom frame anchored after the bound-verification paragraph, landing on
+    the drift-discussion page; Fig. 4's in-column image sits after the
+    paragraph that reads its curve, filling the rate-distortion column;
+    Fig. 7 leaves the Fig. 7/8 stack and becomes a bottom frame on its
+    citation page, so the throughput and Table III text fill that page with
+    Fig. 8 alone topping the next; Fig. 14 moves after the
+    matched-operating-points sentence.
     """
     move_after(ed, frame_block(ed, "Fig. 14. Compressed-domain"),
                "Rate-distortion claims are easiest to judge at matched "
                "operating")
     blk2 = frame_block(ed, "Fig. 2. Mean relative error")
     for p in blk2:
-        p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "top")
-    move_after(ed, blk2, "Fig. 4 plots the rate-distortion trade-off")
+        p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "bottom")
+    move_after(ed, blk2,
+               "Table I and Fig. 2 examine a dataset where variables span")
     move_after(ed, frame_block(ed, "Fig. 3. Cumulative RMSE"),
                "extends the same verification to 1.5")
     blk7 = frame_block(ed, "Fig. 7. Encoding throughput")
@@ -194,6 +201,17 @@ def reflow(ed):
         p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "bottom")
     move_after(ed, blk7,
                "Fig. 7 reports throughput on the real-world UCI datasets")
+    # Fig. 4's image follows the paragraph that discusses its curve
+    cap4 = next(p for p in ed.paras
+                if ed.para_text(p).strip()
+                .startswith("Fig. 4. Rate-distortion comparison"))
+    img4 = cap4.getprevious()
+    tgt = next(p for p in ed.paras
+               if "the tolerance sweeps out the full curve" in ed.para_text(p))
+    for p in (img4, cap4):
+        p.getparent().remove(p)
+    tgt.addnext(cap4)
+    tgt.addnext(img4)
     keep_with_caption(ed, "Fig. 4. Rate-distortion comparison")
     keep_with_caption(ed, "Fig. 5. Rate-distortion comparison with ZFP")
 
