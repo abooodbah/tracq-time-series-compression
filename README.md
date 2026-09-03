@@ -61,7 +61,20 @@ The `scripts/` directory contains the full benchmark and figure pipeline:
 - `sz3_dense_sweep.py` — SZ3 tolerance sweep via the HDF5 filter.
 - `highdim_experiment.py` — 64 to 4,096-variable scaling.
 - `lattice_anomaly_experiment.py`, `anomaly_generalization.py` — compressed-domain
-  anomaly detection.
+  anomaly detection on injected anomalies and the three-dataset
+  generalization check.
+- `anomaly_detection_experiment.py` — the four-pipeline detection comparison
+  including the supervised Numerical RF baseline.
+- `metropt_real_faults.py`, `metropt_grid.py` — anomaly screening against the
+  four documented MetroPT-3 air-leak failures and the pre-specified
+  window/tolerance/detector sweep.
+- `visual_inspection_demo.py` — the injected-anomaly grids of the visual
+  inspection demonstration.
+- `fig_data_lattice.py` — collects the synthetic-section measurements
+  (ablation, multi-scale, drift, rate-distortion, throughput, streaming).
+- `realworld_benchmark.py` — the real-world dataset comparison table.
+- `scaling_study.py` + `scaling_study.sbatch` — strong/weak node-parallel
+  scaling on one 112-core node (SLURM).
 - `terabyte_stream.py` + `terabyte_stream.sbatch` — node-parallel 1 TB windowed
   streaming run (SLURM, 112-core Sapphire Rapids node).
 - `render_paper_figs.py` — regenerates every figure from the JSON results in

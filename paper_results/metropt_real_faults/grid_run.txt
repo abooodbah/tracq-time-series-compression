@@ -1,0 +1,59 @@
+C:\Users\Abdulfatah\personal\research\tracq\tracq-time-series-compression\scripts\metropt_grid.py:36: RuntimeWarning: Precision loss occurred in moment calculation due to catastrophic cancellation. This occurs when the data are nearly identical. Results may be unreliable.
+  f.extend([np.mean(r), np.std(r), np.max(r) - np.min(r), kurtosis(r),
+C:\Users\Abdulfatah\anaconda3\Lib\site-packages\joblib\externals\loky\backend\context.py:136: UserWarning: Could not find the number of physical cores for the following reason:
+[WinError 2] The system cannot find the file specified
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "C:\Users\Abdulfatah\anaconda3\Lib\site-packages\joblib\externals\loky\backend\context.py", line 257, in _count_physical_cores
+    cpu_info = subprocess.run(
+               ^^^^^^^^^^^^^^^
+  File "C:\Users\Abdulfatah\anaconda3\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Abdulfatah\anaconda3\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\Abdulfatah\anaconda3\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Abdulfatah\personal\research\tracq\tracq-time-series-compression\scripts\metropt_grid.py:36: RuntimeWarning: Precision loss occurred in moment calculation due to catastrophic cancellation. This occurs when the data are nearly identical. Results may be unreliable.
+  f.extend([np.mean(r), np.std(r), np.max(r) - np.min(r), kurtosis(r),
+C:\Users\Abdulfatah\personal\research\tracq\tracq-time-series-compression\scripts\metropt_grid.py:36: RuntimeWarning: Precision loss occurred in moment calculation due to catastrophic cancellation. This occurs when the data are nearly identical. Results may be unreliable.
+  f.extend([np.mean(r), np.std(r), np.max(r) - np.min(r), kurtosis(r),
+    W     eps features                    det     ROC      PR   lift
+--------------------------------------------------------------------
+  100       - numerical (decode)           IF   0.944   0.151    7.5x
+  100       - numerical (decode)          LOF   0.535   0.034    1.7x
+  100    0.01 grid                         IF   0.850   0.058    2.9x
+  100    0.01 grid                        LOF   0.429   0.018    0.9x
+  100    0.01 grid+m0                      IF   0.905   0.089    4.4x
+  100    0.01 grid+m0                     LOF   0.529   0.035    1.7x
+  100   0.001 grid                         IF   0.901   0.085    4.3x
+  100   0.001 grid                        LOF   0.459   0.020    1.0x
+  100   0.001 grid+m0                      IF   0.922   0.107    5.3x
+  100   0.001 grid+m0                     LOF   0.482   0.036    1.8x
+      (n=15,169 windows, 304 positive, base rate 0.0200)
+--------------------------------------------------------------------
+  500       - numerical (decode)           IF   0.948   0.180    8.5x
+  500       - numerical (decode)          LOF   0.666   0.092    4.3x
+  500    0.01 grid                         IF   0.943   0.148    7.0x
+  500    0.01 grid                        LOF   0.356   0.018    0.9x
+  500    0.01 grid+m0                      IF   0.936   0.131    6.2x
+  500    0.01 grid+m0                     LOF   0.337   0.016    0.8x
+  500   0.001 grid                         IF   0.940   0.145    6.9x
+  500   0.001 grid                        LOF   0.301   0.014    0.7x
+  500   0.001 grid+m0                      IF   0.933   0.127    6.0x
+  500   0.001 grid+m0                     LOF   0.406   0.028    1.3x
+      (n=3,033 windows, 64 positive, base rate 0.0211)
+--------------------------------------------------------------------
+ 2000       - numerical (decode)           IF   0.959   0.296   11.8x
+ 2000       - numerical (decode)          LOF   0.486   0.043    1.7x
+ 2000    0.01 grid                         IF   0.935   0.158    6.3x
+ 2000    0.01 grid                        LOF   0.876   0.140    5.6x
+ 2000    0.01 grid+m0                      IF   0.936   0.180    7.2x
+ 2000    0.01 grid+m0                     LOF   0.771   0.073    2.9x
+ 2000   0.001 grid                         IF   0.933   0.153    6.1x
+ 2000   0.001 grid                        LOF   0.629   0.078    3.1x
+ 2000   0.001 grid+m0                      IF   0.934   0.208    8.3x
+ 2000   0.001 grid+m0                     LOF   0.533   0.080    3.2x
+      (n=758 windows, 19 positive, base rate 0.0251)
+--------------------------------------------------------------------

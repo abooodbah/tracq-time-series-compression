@@ -1,0 +1,16 @@
+C:\Users\Abdulfatah\personal\research\tracq\tracq-time-series-compression\scripts\metropt_real_faults.py:48: RuntimeWarning: Precision loss occurred in moment calculation due to catastrophic cancellation. This occurs when the data are nearly identical. Results may be unreliable.
+  kurtosis(row), np.max(np.abs(np.diff(row))),
+loading MetroPT-3 ...
+  15 sensors x 1,516,948 steps
+  29,954 rows inside documented failures (1.97%)
+  15,169 non-overlapping windows of 100 steps, 304 positive (2.00%)
+
+encoding every window once (storage step, not timed against either pipeline)
+  encoded 15,169 windows in 5.7 s
+
+Pipeline                                   F1   Prec.   Rec.    ROC     PR     win/s
+Numerical IF (decode-then-detect)       0.017   0.017  0.016  0.944  0.151        64
+TRACQ Direct IF (compressed domain)     0.003   0.003  0.003  0.850  0.058       230
+
+throughput ratio: 3.6x
+random-baseline PR-AUC (base rate): 0.0200
