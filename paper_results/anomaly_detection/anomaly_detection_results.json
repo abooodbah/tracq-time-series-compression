@@ -1,0 +1,67 @@
+{
+  "dataset": "uci_appliances_energy",
+  "window_size": 100,
+  "n_windows": 198,
+  "n_normal": 99,
+  "n_anomalous": 99,
+  "anomaly_types": {
+    "normal": 99,
+    "spike": 32,
+    "level_shift": 35,
+    "variance": 32
+  },
+  "pipelines": [
+    {
+      "name": "Numerical IF",
+      "f1": 0.7474747474747475,
+      "precision": 0.7474747474747475,
+      "recall": 0.7474747474747475,
+      "accuracy": 0.7474747474747475,
+      "feature_time_s": 11.716823900002055,
+      "detect_time_s": 0.3988719000481069,
+      "total_time_s": 12.115695800050162,
+      "throughput_wps": 16.3424373859882
+    },
+    {
+      "name": "Numerical RF",
+      "f1": 0.23655913978494625,
+      "precision": 0.25287356321839083,
+      "recall": 0.2222222222222222,
+      "accuracy": 0.2828282828282828,
+      "cv_time_s": 0.9321789999958128,
+      "inference_time_s": 0.006578300031833351,
+      "throughput_wps": 30098.96159218175
+    },
+    {
+      "name": "TRACQ Image RF",
+      "f1": 0.48484848484848486,
+      "precision": 0.48484848484848486,
+      "recall": 0.48484848484848486,
+      "accuracy": 0.48484848484848486,
+      "encode_time_s": 0.2960728000616655,
+      "feature_time_s": 0.8747358000837266,
+      "cv_time_s": 0.76898589998018,
+      "inference_time_s": 1.5734062999254093,
+      "throughput_wps": 125.84162146127585
+    },
+    {
+      "name": "TRACQ Threshold",
+      "f1": 0.6558704453441295,
+      "precision": 0.5472972972972973,
+      "recall": 0.8181818181818182,
+      "accuracy": 0.5707070707070707,
+      "best_feature": "pixel_std_below",
+      "encode_time_s": 0.3264231000794098,
+      "feature_time_s": 0.2415305000031367,
+      "total_time_s": 0.5679536000825465,
+      "throughput_wps": 819.772240680396
+    }
+  ],
+  "throughput": {
+    "decode_then_detect_time_s": 13.52364819997456,
+    "direct_detect_time_s": 1.6806135999504477,
+    "decode_then_detect_wps": 14.641019721318429,
+    "direct_detect_wps": 117.81411265851827,
+    "speedup": 8.046851578717023
+  }
+}

@@ -538,13 +538,20 @@ def fig13():
 # ---- Fig 14: anomaly detection ----
 def fig14():
     at = FD["anomaly_throughput"]
-    pipes = [("Numerical IF", AN["numerical_if"]), ("TRACQ Direct IF", AN["t2_perrow_if_eps0.03"]),
-             ("TRACQ Threshold", AN["t2_threshold"]), ("Image RF", AN["t2_image_rf_paper_feats"])]
+    # panel (a) mirrors Table V: same four pipelines, same order; the
+    # Numerical RF row comes from the rerun of the 4-pipeline experiment
+    adr = json.load(open(os.path.join(
+        os.path.dirname(LAT), "anomaly_detection",
+        "anomaly_detection_results.json")))
+    num_rf = next(p for p in adr["pipelines"] if p["name"] == "Numerical RF")
+    pipes = [("Numerical IF", AN["numerical_if"]), ("Numerical RF", num_rf),
+             ("TRACQ Direct IF", AN["t2_perrow_if_eps0.03"]),
+             ("TRACQ Threshold", AN["t2_threshold"])]
     fig, axes = newfig(14, ncols=2)
     ax = axes[0]
     x = np.arange(len(pipes))
     w = 0.26
-    colors = [BLUE, GREEN, PURPLE, RED]
+    colors = [BLUE, RED, GREEN, PURPLE]
     for i, (name, r) in enumerate(pipes):
         ax.bar(x[i] - w, r["f1"], w, color=colors[i], edgecolor="black", lw=0.5)
         ax.bar(x[i], r["precision"], w, color=colors[i], alpha=0.62, edgecolor="black", lw=0.5)
@@ -555,9 +562,9 @@ def fig14():
     ax.legend(handles=[Patch(facecolor="#555", edgecolor="k", label="F1-Score"),
                        Patch(facecolor="#999", edgecolor="k", label="Precision"),
                        Patch(facecolor="#ccc", edgecolor="k", label="Recall")],
-              loc="upper right")
+              loc="upper center", ncol=3, columnspacing=0.9, handlelength=1.2)
     ax.set_xticks(x, [p[0] for p in pipes], rotation=18)
-    ax.set_ylim(0, 1.12)
+    ax.set_ylim(0, 1.16)
     ax.set_ylabel("Score")
     plabel(ax, "(a)")
     ax.set_axisbelow(True)
