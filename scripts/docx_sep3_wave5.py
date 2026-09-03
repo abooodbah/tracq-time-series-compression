@@ -9,13 +9,10 @@ repeated no-decompression claims in Sections V-K through V-M are removed or
 merged, keeping one statement per section role; Fig. 8's caption names the
 plotted series; and a subject-verb slip in the intro is corrected.
 
-The deletions shorten the flow, so two frame anchors move to keep every
-column filled: Fig. 14's block re-anchors after the matched-operating-points
-sentence (its old anchor beached page 14), and Fig. 2's block re-anchors at
-the top of Section V-E (its old anchor in V-C forced the V-D text onto the
-figure page and beached page 6; the residual gap there is set by Table II's
-keep-together unit). Fig. 3 stays at its original anchor before the
-verification paragraph.
+The deletions shorten the flow, so the Section V frame anchors move to keep
+every column filled; see reflow() for the placement rationale. Figs. 4 and 5
+(in-column) get keepNext so a shifted column break can never separate either
+image from its caption.
 
 Usage: python docx_sep3_wave5.py <tree_root>
 """
@@ -155,19 +152,10 @@ def move_after(ed, paras, anchor_text):
         target.addnext(p)
 
 
-def reflow(ed):
-    """Re-anchor Figs. 14 and 2 for the post-deletion flow."""
-    move_after(ed, frame_block(ed, "Fig. 14. Compressed-domain"),
-               "Rate-distortion claims are easiest to judge at matched "
-               "operating")
-    blk2 = frame_block(ed, "Fig. 2. Mean relative error")
-    for p in blk2:
-        p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "top")
-    move_after(ed, blk2, "Fig. 4 plots the rate-distortion trade-off")
-    # the new break point split Fig. 4's in-column image from its caption
+def keep_with_caption(ed, caption_prefix):
+    """keepNext on an in-column figure's image so it never leaves its caption."""
     cap = next(p for p in ed.paras
-               if ed.para_text(p).strip()
-               .startswith("Fig. 4. Rate-distortion comparison"))
+               if ed.para_text(p).strip().startswith(caption_prefix))
     img = cap.getprevious()
     ppr = img.find(q("w:pPr"))
     if ppr is None:
@@ -177,6 +165,37 @@ def reflow(ed):
         kn = ppr.makeelement(q("w:keepNext"), {})
         st = ppr.find(q("w:pStyle"))
         st.addnext(kn) if st is not None else ppr.insert(0, kn)
+
+
+def reflow(ed):
+    """Re-anchor the Section V frames for the post-deletion flow.
+
+    The Wave-5 deletions freed roughly half a column; with every anchor left
+    in place the slack beached pages 6 and 7. Final placement: Fig. 14 moves
+    after the matched-operating-points sentence; Fig. 2 (top) anchors after
+    the Fig. 4 lead-in and Fig. 3 (bottom) after the verification paragraph,
+    so the drift discussion fills page 6 and the rate-distortion prose plus
+    the in-column Figs. 4 and 5 fill the band between the two frames; Fig. 7
+    leaves the Fig. 7/8 stack and becomes a bottom frame on its citation
+    page, which lets the throughput and Table III text fill that page, with
+    Fig. 8 alone topping the next.
+    """
+    move_after(ed, frame_block(ed, "Fig. 14. Compressed-domain"),
+               "Rate-distortion claims are easiest to judge at matched "
+               "operating")
+    blk2 = frame_block(ed, "Fig. 2. Mean relative error")
+    for p in blk2:
+        p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "top")
+    move_after(ed, blk2, "Fig. 4 plots the rate-distortion trade-off")
+    move_after(ed, frame_block(ed, "Fig. 3. Cumulative RMSE"),
+               "extends the same verification to 1.5")
+    blk7 = frame_block(ed, "Fig. 7. Encoding throughput")
+    for p in blk7:
+        p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "bottom")
+    move_after(ed, blk7,
+               "Fig. 7 reports throughput on the real-world UCI datasets")
+    keep_with_caption(ed, "Fig. 4. Rate-distortion comparison")
+    keep_with_caption(ed, "Fig. 5. Rate-distortion comparison with ZFP")
 
 
 def main(tree):
@@ -194,7 +213,7 @@ def main(tree):
     reflow(ed)
     ed.save()
     print(f"text edits attempted: {len(EDITS)}; Table IV category split: {ok}; "
-          f"Figs. 14 and 2 re-anchored")
+          f"Figs. 14, 2, 3, 7 re-anchored")
 
 
 if __name__ == "__main__":
