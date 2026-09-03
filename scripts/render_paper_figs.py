@@ -27,6 +27,10 @@ PT = json.load(open(os.path.join(LAT, "paper_tables.json")))
 LR = json.load(open(os.path.join(LAT, "lattice_results.json")))
 MP = json.load(open(os.path.join(LAT, "metropt3_lattice.json")))
 AN = json.load(open(os.path.join(LAT, "anomaly_results.json")))
+LZ = {k: v for k, v in
+      json.load(open(os.path.join(LAT, "lfzip_results.json"))).items()
+      if not k.startswith("_")}
+LFZIP_C = "#17becf"
 RW = {}
 for ds in ["uci_air_quality", "uci_appliances_energy", "uci_metro_traffic"]:
     with open(os.path.join(PROJECT_ROOT, "paper_results", "realworld", ds + "_results.json")) as f:
@@ -330,6 +334,9 @@ def fig9():
                       if p["ratio"] > 0 and p["rmse"] > 0])
         ax.plot([p[0] for p in ssw], [p[1] for p in ssw], "s-", color="#e377c2", ms=4, lw=1.2,
                 label="SZ3" if ds == "uci_air_quality" else None)
+        lz = sorted((1 / c["ratio"], c["rmse"]) for c in LZ[iso_key[ds]].values())
+        ax.plot([p[0] for p in lz], [p[1] for p in lz], "o-", color=LFZIP_C, ms=5, lw=1.2,
+                label="LFZip" if ds == "uci_air_quality" else None)
         for mode, c, mk, lab in [("abs", GREEN, "^", "TRACQ (abs)"), ("rel", PURPLE, "d", "TRACQ (rel)")]:
             sweep = sorted([r for k, r in LR[ds].items()
                             if r["candidate"] == "C2_bank" and r["mode"] == mode],
@@ -410,6 +417,9 @@ def fig11():
         if met == "rmse":
             ax.plot([p[0] for p in sz3_full], [max(p[1], 1e-6) for p in sz3_full], "s-",
                     color="#e377c2", ms=4, lw=1.1, label="SZ3")
+        lz = sorted((1 / c["ratio"], max(c[met], 1e-6)) for c in LZ["metropt3"].values())
+        ax.plot([p[0] for p in lz], [p[1] for p in lz], "o-", color=LFZIP_C, ms=5,
+                lw=1.1, label="LFZip")
         dz = MP["delta_zstd"]
         ax.axvline(1 / dz["ratio"], color="black", ls=":", lw=1.2, label="Delta+Zstd (lossless)")
         ax.set_xscale("log")
@@ -594,12 +604,24 @@ def fig17():
              "metropt3": ("MetroPT-3", BLUE, "^")}
     for key, (lab, c, mk) in names.items():
         rows = iso[key]["iso3"]
-        ax.plot([r["rmse"] for r in rows], [r["adv_best"] for r in rows], mk + "-",
+        # best competitor now includes LFZip, log-log interpolated onto each
+        # matched-RMSE point within its measured span
+        lz = sorted((c2["rmse"], c2["ratio"]) for c2 in LZ[key].values())
+        lx = np.log10([p[0] for p in lz])
+        ly = np.log10([p[1] for p in lz])
+        adv = []
+        for r in rows:
+            cands = [r[k2] for k2 in ("zfp_ratio", "sz3_ratio")
+                     if r.get(k2) and r[k2] > 0]
+            if lz[0][0] <= r["rmse"] <= lz[-1][0]:
+                cands.append(float(10 ** np.interp(np.log10(r["rmse"]), lx, ly)))
+            adv.append(min(cands) / r["tracq_ratio"])
+        ax.plot([r["rmse"] for r in rows], adv, mk + "-",
                 color=c, ms=4.5, lw=1.4, label=lab)
     ax.axhline(1.0, color="black", ls=":", lw=1.2)
     ax.set_xscale("log")
     ax.set_xlabel("RMSE (matched)")
-    ax.set_ylabel("Best HPC size ÷ TRACQ size")
+    ax.set_ylabel("Best competitor ÷ TRACQ size")
     ax.set_ylim(0.6, 5.4)
     ax.legend(ncols=2, loc="upper left")
     shrink(fig, 8.5)
