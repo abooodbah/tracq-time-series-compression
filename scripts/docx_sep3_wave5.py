@@ -164,6 +164,19 @@ def reflow(ed):
     for p in blk2:
         p.find(q("w:pPr") + "/" + q("w:framePr")).set(q("w:yAlign"), "top")
     move_after(ed, blk2, "Fig. 4 plots the rate-distortion trade-off")
+    # the new break point split Fig. 4's in-column image from its caption
+    cap = next(p for p in ed.paras
+               if ed.para_text(p).strip()
+               .startswith("Fig. 4. Rate-distortion comparison"))
+    img = cap.getprevious()
+    ppr = img.find(q("w:pPr"))
+    if ppr is None:
+        ppr = img.makeelement(q("w:pPr"), {})
+        img.insert(0, ppr)
+    if ppr.find(q("w:keepNext")) is None:
+        kn = ppr.makeelement(q("w:keepNext"), {})
+        st = ppr.find(q("w:pStyle"))
+        st.addnext(kn) if st is not None else ppr.insert(0, kn)
 
 
 def main(tree):
