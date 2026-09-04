@@ -31,6 +31,16 @@ LZ = {k: v for k, v in
       json.load(open(os.path.join(LAT, "lfzip_results.json"))).items()
       if not k.startswith("_")}
 LFZIP_C = "#17becf"
+_sweep = os.path.join(LAT, "lfzip_sweep.json")
+LZS = json.load(open(_sweep)) if os.path.exists(_sweep) else {}
+
+
+def lfzip_curve(key):
+    """(rmse, ratio) points for a dataset: the dense sweep when present,
+    otherwise the three matched-tolerance operating points."""
+    if LZS.get(key):
+        return sorted((r["rmse"], r["ratio"]) for r in LZS[key])
+    return sorted((c["rmse"], c["ratio"]) for c in LZ[key].values())
 RW = {}
 for ds in ["uci_air_quality", "uci_appliances_energy", "uci_metro_traffic"]:
     with open(os.path.join(PROJECT_ROOT, "paper_results", "realworld", ds + "_results.json")) as f:
@@ -64,6 +74,27 @@ def plabel(ax, s):
     """Panel identifier placed below the panel, as a second x-label line."""
     cur = ax.get_xlabel()
     ax.set_xlabel(cur + "\n" + s if cur else s)
+
+
+def legend_clear(fig, ax, label=""):
+    """Report any plotted point that the legend box covers.
+
+    The legend is drawn opaque so its text stays readable, which means a badly
+    placed one silently hides data. This prints the offenders instead.
+    """
+    lg = ax.get_legend()
+    if lg is None:
+        return
+    fig.canvas.draw()
+    box = lg.get_window_extent()
+    hidden = 0
+    for line in ax.get_lines():
+        if line.get_transform() is not ax.transData:
+            continue  # axvline and friends carry a blended transform
+        xy = ax.transData.transform(line.get_xydata())
+        hidden += sum(1 for x, y in xy if box.contains(x, y))
+    if hidden:
+        print(f"  !! legend hides {hidden} plotted points {label}")
 
 
 def shrink(fig, s):
@@ -193,7 +224,7 @@ def fig5():
     ax.set_yscale("log")
     ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("RMSE")
-    ax.legend(loc="lower right", ncols=2, frameon=True)
+    ax.legend(loc="lower right", ncols=2, frameon=True, framealpha=0.95)
     shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 5)
@@ -321,8 +352,7 @@ def fig9():
     for ax, (ds, nm) in zip(axes, names.items()):
         pts = []
         for m, lab, c, mk in [("paa", "PAA", ORANGE, "v"),
-                              ("sax", "SAX", GRAY, "x"),
-                              ("gorilla_like", "Rounded delta", "#8c564b", "*")]:
+                              ("sax", "SAX", GRAY, "x")]:
             r = RW[ds].get(m)
             if r and "metrics" in r and r["metrics"]["rmse"] > 1e-12 and r["metrics"]["rmse"] < 1e10:
                 ax.plot(1 / r["ratio"], r["metrics"]["rmse"], mk, color=c, ms=7,
@@ -335,8 +365,9 @@ def fig9():
                       if p["ratio"] > 0 and p["rmse"] > 0])
         ax.plot([p[0] for p in ssw], [p[1] for p in ssw], "s-", color="#e377c2", ms=4, lw=1.2,
                 label="SZ3" if ds == "uci_air_quality" else None)
-        lz = sorted((1 / c["ratio"], c["rmse"]) for c in LZ[iso_key[ds]].values())
-        ax.plot([p[0] for p in lz], [p[1] for p in lz], "o-", color=LFZIP_C, ms=5, lw=1.2,
+        lz = sorted((1 / r, m) for m, r in lfzip_curve(iso_key[ds]))
+        ax.plot([p[0] for p in lz], [p[1] for p in lz], "o-", color=LFZIP_C,
+                ms=3.5, lw=1.2,
                 label="LFZip" if ds == "uci_air_quality" else None)
         for mode, c, mk, lab in [("abs", GREEN, "^", "TRACQ (abs)"), ("rel", PURPLE, "d", "TRACQ (rel)")]:
             sweep = sorted([r for k, r in LR[ds].items()
@@ -352,7 +383,8 @@ def fig9():
         if ds == "uci_air_quality":
             ax.set_ylabel("RMSE")
     shrink(fig, 8)
-    fig.legend(loc="lower center", ncols=5, fontsize=8, frameon=True)
+    fig.legend(loc="lower center", ncols=5, fontsize=8, frameon=True,
+               framealpha=0.95)
     fig.tight_layout(rect=[0, 0.12, 1, 1])
     save(fig, 9)
 
@@ -366,7 +398,6 @@ def fig10():
                ("LATTICE_1e-4", "TRACQ (0.0001)", "#0b4d0b"),
                ("paa", "PAA-64", ORANGE),
                ("sax", "SAX-64", GRAY),
-               ("gorilla_like", "Rounded delta", "#8c564b"),
                ("zfp_tol_0.1", "ZFP (0.1)", BLUE),
                ("zfp_tol_0.001", "ZFP (0.001)", "#0b3d6b"),
                ("LFZIP_0.01", "LFZip (0.01)", LFZIP_C),
@@ -389,12 +420,14 @@ def fig10():
             else:
                 r = RW[ds].get(m)
                 vals.append(min(max(r["metrics"]["rmse"], 1e-4), 1e5) if r and "metrics" in r else 0)
-        ax.bar(x + (i - 4.5) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
+        ax.bar(x + (i - 4.0) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
     ax.set_yscale("log")
-    ax.set_ylim(top=3e8)
+    ax.set_ylim(top=2e6)
+    ax.set_yticks([1e-3, 1e-1, 1e1, 1e3])   # the 1e5 tick sits under the legend
     ax.set_xticks(x, list(names.values()))
     ax.set_ylabel("RMSE")
-    ax.legend(ncols=5, fontsize=8.5, loc="upper center", columnspacing=1.0)
+    ax.legend(ncols=5, fontsize=8.5, loc="upper center", columnspacing=1.0,
+              framealpha=0.95)
     ax.set_axisbelow(True)
     fig.tight_layout()
     save(fig, 10)
@@ -425,11 +458,13 @@ def fig11():
         if met == "rmse":
             ax.plot([p[0] for p in sz3_full], [max(p[1], 1e-6) for p in sz3_full], "s-",
                     color="#e377c2", ms=4, lw=1.1, label="SZ3")
-        lz = sorted((1 / c["ratio"], max(c[met], 1e-6)) for c in LZ["metropt3"].values())
-        ax.plot([p[0] for p in lz], [p[1] for p in lz], "o-", color=LFZIP_C, ms=5,
-                lw=1.1, label="LFZip")
+        rows = LZS.get("metropt3") or list(LZ["metropt3"].values())
+        lz = sorted((1 / r["ratio"], max(r[met], 1e-6)) for r in rows)
+        ax.plot([p[0] for p in lz], [p[1] for p in lz], "o-", color=LFZIP_C,
+                ms=3.5, lw=1.1, label="LFZip")
         dz = MP["delta_zstd"]
-        ax.axvline(1 / dz["ratio"], color="black", ls=":", lw=1.2, label="Delta+Zstd (lossless)")
+        ax.axvline(1 / dz["ratio"], color="black", ls=":", lw=1.2,
+                   label="Delta+Zstd (lossless)")
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_xlim(1.5, 3000)
@@ -437,9 +472,20 @@ def fig11():
         ax.set_xlabel(RATIO_LABEL)
         ax.set_ylabel(lab)
         plabel(ax, letter)
-        ax.legend(loc="lower right" if met == "rmse" else "best")
+        if met == "rmse":
+            # one legend for the whole figure, in panel (a) where every series
+            # appears. Both panels are a broad diagonal band, so the room for
+            # it comes from extending the axis below the smallest measurement
+            # rather than from covering data.
+            ax.set_ylim(1e-10, 3e1)
+            ax.set_yticks([1e-6, 1e-4, 1e-2, 1e0])
+            ax.legend(loc="lower right", ncols=2, handlelength=1.6,
+                      columnspacing=1.0, handletextpad=0.5, framealpha=0.95)
     shrink(fig, 8.5)
+    for t in axes[0].get_legend().get_texts():
+        t.set_size(7.0)
     fig.tight_layout()
+    legend_clear(fig, axes[0], "(a)")
     save(fig, 11)
 
 
@@ -614,7 +660,7 @@ def fig17():
         rows = iso[key]["iso3"]
         # best competitor now includes LFZip, log-log interpolated onto each
         # matched-RMSE point within its measured span
-        lz = sorted((c2["rmse"], c2["ratio"]) for c2 in LZ[key].values())
+        lz = lfzip_curve(key)
         lx = np.log10([p[0] for p in lz])
         ly = np.log10([p[1] for p in lz])
         adv = []
@@ -631,7 +677,7 @@ def fig17():
     ax.set_xlabel("RMSE (matched)")
     ax.set_ylabel("Best competitor ÷ TRACQ size")
     ax.set_ylim(0.6, 5.4)
-    ax.legend(ncols=2, loc="upper left")
+    ax.legend(ncols=2, loc="upper left", framealpha=0.95)
     shrink(fig, 8.5)
     fig.tight_layout(pad=1.1)
     fig.savefig(os.path.join(OUT, "image17.png"), dpi=300)
