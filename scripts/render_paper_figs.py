@@ -81,7 +81,7 @@ def shrink(fig, s):
             t.set_size(min(t.get_size(), s))
 
 
-RATIO_LABEL = "Compression ratio (original ÷ encoded)"
+RATIO_LABEL = "Compression factor (original / encoded)"
 
 
 def save(fig, n):
@@ -292,7 +292,7 @@ def fig8():
     ax.set_ylabel("Encode throughput (MB/s)")
     ax3 = ax.twinx()
     ax3.bar(x + w / 2, [1 / mp[k]["ratio"] for k in keys], w, color=PURPLE, edgecolor="black",
-            lw=0.5, label="Compression ratio")
+            lw=0.5, label="Compression factor")
     ax3.set_ylabel(RATIO_LABEL)
     ax3.grid(False)
     ax.set_xticks(x, labels)
