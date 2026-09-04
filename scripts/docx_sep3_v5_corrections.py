@@ -43,15 +43,6 @@ MATH = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
 EDITS = [
     ("They also compare against ZFP and report throughput.",
      "They also compare against ZFP, SZ3, and LFZip, and report throughput."),
-    ("In Fig. 10 the TRACQ configurations reduce RMSE monotonically with the "
-     "tolerance and dominate all non-HPC baselines, while ZFP reaches lower "
-     "RMSE only at 1.5\u20137\u00d7 larger encoded sizes (Fig. 15).",
-     "In Fig. 10 the TRACQ configurations reduce RMSE monotonically with the "
-     "tolerance and dominate the symbolic and delta baselines by two to three "
-     "orders of magnitude; they match the time-series-specific LFZip to within "
-     "a few percent of RMSE while encoding 1.3\u20131.9\u00d7 smaller, and ZFP "
-     "reaches lower RMSE only at 1.5\u20137\u00d7 larger encoded sizes "
-     "(Fig. 15)."),
     ("Fig. 12(b) plots SMAPE against compression ratio across all methods and "
      "datasets. The relative-bound configuration traces the lower-right "
      "frontier from ratio 0.01 to 0.38, with the added benefit of visual "
