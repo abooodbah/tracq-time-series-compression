@@ -193,7 +193,8 @@ def fig5():
     ax.set_yscale("log")
     ax.set_xlabel(RATIO_LABEL)
     ax.set_ylabel("RMSE")
-    ax.legend(loc="lower right", fontsize=9, ncols=2, frameon=True)
+    ax.legend(loc="lower right", ncols=2, frameon=True)
+    shrink(fig, 8.5)
     fig.tight_layout()
     save(fig, 5)
 
