@@ -34,8 +34,12 @@ came to rest against the column text above it (0.1 pt clearance), reading as
 though the caption belonged to that paragraph. The caption therefore carries
 an explicit 8 pt space-before. docx_layout_audit.py now checks that clearance.
 
-Result: 152 pt of white against 274 pt before, no internal holes at all, no
+Result: 125 pt of white against 274 pt before, no internal holes at all, no
 caption collisions, no split tables, figure order and adjacency unchanged.
+The one remaining gap, 75 pt at the foot of p7's left column, is the floor
+for that page: Fig. 4's image and caption form a 181 pt block that cannot fit
+there, and every anchor further down the page pushes it onto p8, which
+measured far worse (a 234 pt hole and a frame collision).
 
 Usage: python docx_sep3_gapfill_layout.py <tree_root>
 """
@@ -125,6 +129,22 @@ def main(tree):
     caption = next(p for p in ed.paras
                    if ed.para_text(p).strip().startswith("TABLE IV. Real-World"))
     set_prop(caption, "spacing", {"before": "160"})
+
+    # Table V follows the throughput paragraph rather than preceding it: its
+    # keepNext chain is ~140 pt and could not fit at the foot of p13, which
+    # left the whole column short. Both paragraphs discuss the table, so the
+    # reading order survives the move.
+    tbl_cap = next(p for p in ed.paras if ed.para_text(p).strip()
+                   .startswith("TABLE V. Anomaly Detection on Appliances"))
+    tbl = tbl_cap.getnext()
+    assert tbl.tag == NS + "tbl"
+    after = next(p for p in ed.paras
+                 if "The critical systems-level result is throughput"
+                 in ed.para_text(p))
+    for el in (tbl_cap, tbl):
+        el.getparent().remove(el)
+    after.addnext(tbl)
+    after.addnext(tbl_cap)
 
     ed.save()
     print("Figs. 1/4/5 re-anchored, Figs. 3/14 top-anchored, lead-in kept, "
