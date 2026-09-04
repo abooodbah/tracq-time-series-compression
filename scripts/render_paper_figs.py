@@ -368,26 +368,33 @@ def fig10():
                ("sax", "SAX-64", GRAY),
                ("gorilla_like", "Rounded delta", "#8c564b"),
                ("zfp_tol_0.1", "ZFP (0.1)", BLUE),
-               ("zfp_tol_0.001", "ZFP (0.001)", "#0b3d6b")]
+               ("zfp_tol_0.001", "ZFP (0.001)", "#0b3d6b"),
+               ("LFZIP_0.01", "LFZip (0.01)", LFZIP_C),
+               ("LFZIP_0.001", "LFZip (0.001)", "#0e7c8a")]
+    lz_key = {"uci_air_quality": "air_quality",
+              "uci_appliances_energy": "appliances",
+              "uci_metro_traffic": "metro_traffic"}
     x = np.arange(3)
-    w = 0.09
+    w = 0.085
     fig, ax = newfig(10)
     for i, (m, lab, c) in enumerate(methods):
         vals = []
         for ds in names:
-            if m.startswith("LATTICE"):
+            if m.startswith("LFZIP"):
+                vals.append(max(LZ[lz_key[ds]][m.split("_")[1]]["rmse"], 1e-4))
+            elif m.startswith("LATTICE"):
                 eps = m.split("_")[1]
                 r = LR[ds][f"C2_bank_abs_eps{eps.replace('1e-2','0.01').replace('1e-3','0.001').replace('1e-4','0.0001')}"]
                 vals.append(max(r["rmse"], 1e-4))
             else:
                 r = RW[ds].get(m)
                 vals.append(min(max(r["metrics"]["rmse"], 1e-4), 1e5) if r and "metrics" in r else 0)
-        ax.bar(x + (i - 3.5) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
+        ax.bar(x + (i - 4.5) * w, vals, w, color=c, edgecolor="black", lw=0.4, label=lab)
     ax.set_yscale("log")
-    ax.set_ylim(top=3e6)
+    ax.set_ylim(top=3e8)
     ax.set_xticks(x, list(names.values()))
     ax.set_ylabel("RMSE")
-    ax.legend(ncols=3, fontsize=9, loc="upper center")
+    ax.legend(ncols=5, fontsize=8.5, loc="upper center", columnspacing=1.0)
     ax.set_axisbelow(True)
     fig.tight_layout()
     save(fig, 10)
