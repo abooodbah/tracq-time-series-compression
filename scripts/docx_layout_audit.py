@@ -3,9 +3,15 @@
 
 Checks, in order of severity:
   1. Overlapping wide figures (frames stacked on the same page space).
-  2. White gaps: per-column content intervals; internal holes over 110 pt and
-     trailing holes over 150 pt are flagged. Full-width content (frames and
-     one-column spans such as Table IV) counts toward both columns.
+  2. White gaps: per-column content intervals. An internal hole (white band
+     between two pieces of content, typically where a figure or table
+     keep-block could not fit) reads far worse than a short column, so it is
+     flagged at 45 pt while a trailing gap is allowed 110 pt. Full-width
+     content (frames and one-column spans such as Table IV) counts toward
+     both columns.
+  2b. Caption collision: a full-width caption must clear the column text
+     above it by at least 6 pt. A caption welded to the preceding paragraph
+     is more visible to a reviewer than any amount of white space.
   3. Figure caption order: true captions ("Fig. N. Text" at line start) must
      appear on non-decreasing pages.
   4. Figure-discussion adjacency: a caption must not appear before the first
@@ -68,16 +74,33 @@ def audit_pdf(path):
         if pno == len(doc) - 1:
             continue
         iv = column_intervals(page)
+        blocks = [(b[0], b[1], b[2], b[3], b[4])
+                  for b in page.get_text("blocks")]
         for side in ("L", "R"):
             cur = TOP
             for y0, y1 in sorted(iv[side]):
-                if y0 - cur > 110:
-                    hard.append(f"gap: p{pno + 1}-{side} hole of "
+                # an internal hole reads far worse than a short column, so it
+                # is flagged at a much tighter threshold
+                if y0 - cur > 45:
+                    hard.append(f"gap: p{pno + 1}-{side} INTERNAL hole of "
                                 f"{round(y0 - cur)}pt at y={round(cur)}")
                 cur = max(cur, y1)
-            if BOT - cur > 150:
+            if BOT - cur > 110:
                 hard.append(f"gap: p{pno + 1}-{side} trailing "
                             f"{round(BOT - cur)}pt")
+
+        # a full-width caption must not touch the column text above it
+        for x0, y0, x1, y1, txt in blocks:
+            if x0 < MID and x1 > MID + 20 and txt.strip().startswith(
+                    ("TABLE", "Fig.")):
+                above = [b for b in blocks if b[3] <= y0 + 1
+                         and not (b[0] < MID and b[2] > MID + 20)]
+                if above:
+                    clear = y0 - max(b[3] for b in above)
+                    if clear < 6:
+                        hard.append(f"collision: p{pno + 1} caption "
+                                    f"'{txt.strip()[:24]}' has {clear:.1f}pt "
+                                    f"clearance above it")
 
     cap_page, cite_pages = {}, {}
     for pno in range(len(doc)):
